@@ -53,48 +53,45 @@ a {
 @keyframes l7 {to{transform: rotate(.5turn)}}
 
 /* CATALOGO */
-.header_catalogo{
-    background-color: rgb(0, 0, 56); 
-    height: 4em;
-    width: 100%;
-}
 
 .icones_nav{    
     display: flex;    
 }
 
-@media (min-width: 992px) {
-    .navbar{
-        padding-top: 1em;
-        width: 75%;
-    }
+.icones_nav_link{
+    cursor: pointer;
+}
 
+.botao{
+    color: white;
+    font-size: 35px;
+}
+
+@media (min-width: 992px) {
+    .container_logo_nav{
+        width: 25%;
+    }
     .icones_nav{
         padding: 0px 0.2em;
         justify-content: space-between;        
     }
 
-    .icon{
-        padding: 0px 0.3em;
+    .container_baarra_pesquisa_nav{
+        width: 70%;
     }
 
-    .barra_pesquisa{
-        width: 50%;
+    .icon{
+        padding: 0px 0.3em;
     }
 }
 
 @media (max-width: 991px){
-    .navbar{
-        width: 100%;
-        padding-top: 0;
-    }
-
     .icon{
         padding: 0.3em 0px;
     }
 
-    .barra_pesquisa{
-        width: 75%;
+    .container_logo_nav{
+        width: 50%;
     }
 }
 

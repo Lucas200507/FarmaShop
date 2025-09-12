@@ -3,7 +3,7 @@ function Modalesqueceu_senha(){
         method: "GET",
         url: "../Pages/Modais/esqueceuSenha.html",
         success: function(data){
-            $("#conteudo_modal_login").html(data);
+            $("#modal_login").html(data);
             let modal_login = new bootstrap.Modal(document.getElementById("modal_login"));
             modal_login.toggle();                
         }
@@ -14,16 +14,21 @@ function verificarEmail(email){
 
 }
 
-function validar_email(){
-    const email = $("email_esqSenha");
-    $("form_esqSenha").validate({
+function validar_email(email){    
+    $("#form_esqSenha").validate({
         rules: {
             email: {
                 required: true,
                 email: true,
                 // Verificar se já tem o email cadastrado
                 remote: {
-                    url: "index.js/verificarEmail" + email // Verificar no bando
+                    url: "../Controller/UsuarioController.java",
+                    type: "get",
+                    data:{
+                        email: function(){
+                            return $("#email_verificador").val();
+                        }
+                    }
                 }
             }
         },
@@ -37,7 +42,8 @@ function validar_email(){
     })
 }
 
-function enviar_email_esqSenha(){
-    let conteudo_modal = document.getElementById("modal_login_conteudo");
+function enviar_email_esqSenha(email){
+    validar_email(email);
+    let conteudo_modal = document.getElementById("modal_esqueceu_senha");
     
 }
