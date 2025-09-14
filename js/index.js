@@ -7,7 +7,7 @@ function Modalesqueceu_senha(){
             let modal_login = new bootstrap.Modal(document.getElementById("modal_login"));
             modal_login.toggle();                
         }
-    })
+    });
 }
 
 function verificarEmail(email){
@@ -46,4 +46,26 @@ function enviar_email_esqSenha(email){
     validar_email(email);
     let conteudo_modal = document.getElementById("modal_esqueceu_senha");
     
+}
+
+function  definir_iconPerson(letra, situacao){
+    if (situacao  == 'logado'){
+       $.ajax({
+        url: "icones.json",
+        method: "GET",
+        dataType: "json",
+        success: function(resultado){
+            let padding = resultado[letra] || "0.25em 0.6em";
+            $("#icon_deslogado").hide(); // some
+                $("#icon_logado")
+                    .show()
+                    .css("padding", padding) // aplica o padding
+                    .html(letra);       
+
+        }
+       });
+    } else {
+        $("#icon_logado").hide();
+        $("#icon_deslogado").show();
+    }
 }

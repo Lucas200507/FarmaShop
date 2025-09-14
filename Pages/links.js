@@ -33,8 +33,12 @@ ioniconsNoModule.noModule = true;
 ioniconsNoModule.src = "https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js";
 document.body.appendChild(ioniconsNoModule);
 // CONEXÃO COM JQUERY
+const jqueryAjax = document.createElement('script');
+jqueryAjax.src = "https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js";
+document.head.appendChild(jqueryAjax);
+
 const jquery = document.createElement('script');
-jquery.src = "https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js";
+jquery.src = "https://code.jquery.com/jquery-3.7.1.min.js";
 document.head.appendChild(jquery);
 // CONEXÃO COM JQUERY VALIDATE
 const jqueyValidate = document.createElement('script');
