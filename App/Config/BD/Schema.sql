@@ -64,6 +64,11 @@ CREATE TABLE farmacias(
     FOREIGN KEY (usuario_id) REFERENCES usuarios (idUsuario)
 );
 
+CREATE TABLE categoria_produtos(
+	idCategoria_produto INT PRIMARY KEY AUTO_INCREMENT,
+	nome VARCHAR(100) NOT NULL
+);
+
 CREATE TABLE produtos(
 	idProduto INT PRIMARY KEY AUTO_INCREMENT,
     codigo VARCHAR(7) NOT NULL,
@@ -74,7 +79,9 @@ CREATE TABLE produtos(
     preco DECIMAL(10, 2) NOT NULL,
     data_alteracao TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     data_cadastro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+	categoria_id INT NOT NULL,
     farmacia_id INT NOT NULL,
+	FOREIGN KEY (categoria_id) REFERENCES catedoria_produtos (idCategoria_produto),
     FOREIGN KEY (farmacia_id) REFERENCES farmacias (idFarmacia)
 );
 
