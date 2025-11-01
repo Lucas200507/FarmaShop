@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="bf0346c0-6be1-4976-b200-62854b6b4191" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/App/Config/BD/Schema.sql" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/App/Model/Dominio/Cliente.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/App/Model/Dominio/Endereco.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/App/Model/Dominio/Farmacia.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/App/Model/Dominio/Produto.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/App/Model/Dominio/Usuario.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/App/Model/Persistencia/UsuarioBD.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/App/Pages/Modais/esqueceuSenha.html" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/App/Pages/Modais/produto_modal.html" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/App/Pages/catalogo.html" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/App/Pages/links.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/App/Pages/login.html" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/App/Pages/produtos.html" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/App/README.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/App/css/index.css" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/App/img/icon_notification.svg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/App/img/logo_farmaShop_horizontal.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/App/img/logo_farmaShop_vertical.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/App/img/logo_sem_nome.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/App/img/nome_farmaShop.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/App/js/icones.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/App/js/index.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/App/splash.html" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/FarmaShop/FarmaShop/src/main/java/Database/Conexao.java" beforeDir="false" afterPath="$PROJECT_DIR$/FarmaShop/FarmaShop/src/main/java/Database/Conexao.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/FarmaShop/FarmaShop/src/main/java/org/example/Main.java" beforeDir="false" afterPath="$PROJECT_DIR$/FarmaShop/FarmaShop/src/main/java/org/example/Main.java" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="GitHubPullRequestSearchHistory">{
+  &quot;lastFilter&quot;: {
+    &quot;state&quot;: &quot;OPEN&quot;,
+    &quot;assignee&quot;: &quot;Lucas200507&quot;
+  }
+}</component>
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/Lucas200507/FarmaShop.git&quot;,
+    &quot;accountId&quot;: &quot;73c255be-da41-4c23-8f6f-194ca4844455&quot;
+  }
+}</component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 3
+}</component>
+  <component name="ProjectId" id="34sucXIlmKGJPlmIJEgXXwLItVc" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
+    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
+    &quot;junie.onboarding.icon.badge.shown&quot;: &quot;true&quot;,
+    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;project.structure.last.edited&quot;: &quot;Project&quot;,
+    &quot;project.structure.proportion&quot;: &quot;0.15&quot;,
+    &quot;project.structure.side.proportion&quot;: &quot;0.2&quot;,
+    &quot;to.speed.mode.migration.done&quot;: &quot;true&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  },
+  &quot;keyToStringList&quot;: {
+    &quot;DatabaseDriversLRU&quot;: [
+      &quot;mysql&quot;
+    ]
+  }
+}</component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-jdk-9823dce3aa75-bf35d07a577b-intellij.indexing.shared.core-IU-252.26830.84" />
+        <option value="bundled-js-predefined-d6986cc7102b-3aa1da707db6-JavaScript-IU-252.26830.84" />
+      </set>
+    </attachedChunks>
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="bf0346c0-6be1-4976-b200-62854b6b4191" name="Changes" comment="" />
+      <created>1762014684324</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1762014684324</updated>
+      <workItem from="1762014687555" duration="1853000" />
+    </task>
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+</project>
