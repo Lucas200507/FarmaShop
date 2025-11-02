@@ -1,27 +1,14 @@
 package Controller;
 
 import Database.Conexao;
+import Controller.Usuario;
 import java.sql.*;
 import java.util.Scanner;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException; 
 
-public class Clientes {
-    
-    /**
-     Remove caracteres não numéricos e verifica o tamanho.
-     * @param valor String a ser validada (CPF ou Telefone)
-     * @param tamanhoMinimo Tamanho mínimo esperado
-     * @param tamanhoMaximo Tamanho máximo esperado
-     * @return O valor limpo (apenas números) se for válido, ou null se inválido.
-     */
-
-     /**
-     * Valida se a string está no formato AAAA-MM-DD e se não é uma data futura.
-     * @param dataStr String da data de nascimento.
-     * @return Um objeto LocalDate se a data for válida, ou null se for inválida.
-     */
+public class Cliente {
 
     private static String validarNumerosETamanho(String valor, int tamanhoMinimo, int tamanhoMaximo) {
         if (valor == null) {
@@ -63,6 +50,9 @@ public class Clientes {
             return null;
         }
     }
+
+    // ANTES DE INSERIR UM NOVO CLIENTE, PRECISA IMPRIMIR TODOS OS USUÁRIOS COM TIPO = CLIENTE
+    // A pessoa deve escolher o id do usuário referencte ao cliente que ele está criando
 
     public static void exibirClientes() {
         Scanner sc = new Scanner(System.in);
@@ -106,6 +96,9 @@ public class Clientes {
     }
 
     private static void inserirCliente(Scanner sc) {
+        // IRÁ EXIBIR OS USUARIOS DO TIPO CLIENTE, agora, deve implementar o código para a pessoa escolher o id do usuário e cadastrá-lo na tabela clientes
+        // Para atualizar o cliente, não deve ser permitido alterar o id Usuário
+        Usuario.exibirUsuarios("cliente");
         try (Connection con = Conexao.getConnection()) {
             String nome, cpfValidado, telefoneValidado;
             LocalDate dataNascimentoValida = null;
