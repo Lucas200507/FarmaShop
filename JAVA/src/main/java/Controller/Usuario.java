@@ -7,44 +7,68 @@ import java.util.List;
 import java.util.Scanner;
 
 public class Usuario {
-    public static void exibirUsuarios() {
+    public static void exibirUsuarios(String tipo) {
         Scanner sc = new Scanner(System.in);
         System.out.println("=== USUÁRIOS ===");
 
-        String sql = "SELECT * FROM usuarios;";
+        if (tipo.equals("todos")) {
+            String sql = "SELECT * FROM usuarios;";
 
-        try (Connection con = Conexao.getConnection();
-             PreparedStatement stmt = con.prepareStatement(sql);
-             ResultSet rs = stmt.executeQuery()) {
+            try (Connection con = Conexao.getConnection();
+                 PreparedStatement stmt = con.prepareStatement(sql);
+                 ResultSet rs = stmt.executeQuery()) {
 
-            while (rs.next()) {
-                System.out.println("ID: " + rs.getInt("id"));
-                System.out.println("Tipo: " + rs.getString("tipo"));
-                System.out.println("Situação: " + rs.getString("situacao"));
-                System.out.println("Email: " + rs.getString("email"));
-                System.out.println("Data de Alteração: "  + rs.getString("data_alteracao"));
-                System.out.println("============================================");
+                while (rs.next()) {
+                    System.out.println("ID: " + rs.getInt("id"));
+                    System.out.println("Tipo: " + rs.getString("tipo"));
+                    System.out.println("Situação: " + rs.getString("situacao"));
+                    System.out.println("Email: " + rs.getString("email"));
+                    System.out.println("Data de Alteração: "  + rs.getString("data_alteracao"));
+                    System.out.println("============================================");
+                }
+                rs.close();
+                stmt.close();
+                con.close();
+            } catch (SQLException e) {
+                System.out.println("Erro ao exibir usuários: " + e.getMessage());
             }
 
-        } catch (SQLException e) {
-            System.out.println("Erro ao exibir usuários: " + e.getMessage());
-        }
+            // Menu de opções
+            System.out.println("\nDigite a opção que preferir:");
+            System.out.println("1. Inserir novo usuário");
+            System.out.println("2. Atualizar usuário");
+            System.out.println("3. Deletar usuário");
+            System.out.println("4. Sair da aba usuários");
+            int opcao = sc.nextInt();
+            sc.nextLine();
 
-        // Menu de opções
-        System.out.println("\nDigite a opção que preferir:");
-        System.out.println("1. Inserir novo usuário");
-        System.out.println("2. Atualizar usuário");
-        System.out.println("3. Deletar usuário");
-        System.out.println("4. Sair da aba usuários");
-        int opcao = sc.nextInt();
-        sc.nextLine();
+            switch (opcao) {
+                case 1 -> inserirUsuario(sc);
+                case 2 -> atualizarUsuario(sc);
+                case 3 -> deletarUsuario(sc);
+                case 4 -> System.out.println("Saindo...");
+                default -> System.out.println("Opção inválida.");
+            }
 
-        switch (opcao) {
-            case 1 -> inserirUsuario(sc);
-            case 2 -> atualizarUsuario(sc);
-            case 3 -> deletarUsuario(sc);
-            case 4 -> System.out.println("Saindo...");
-            default -> System.out.println("Opção inválida.");
+        } else {
+            String sql = "SELECT * FROM usuarios WHERE tipo = ?";
+            try (Connection con = Conexao.getConnection();
+                 PreparedStatement stmt = con.prepareStatement(sql)){
+                    stmt.setString(1, tipo);
+                    try(ResultSet rs = stmt.executeQuery()) {
+
+                    while (rs.next()) {
+                        System.out.println("ID: " + rs.getInt("id"));
+                        System.out.println("Tipo: " + rs.getString("tipo"));
+                        System.out.println("Situação: " + rs.getString("situacao"));
+                        System.out.println("Email: " + rs.getString("email"));
+                        System.out.println("Data de Alteração: "  + rs.getString("data_alteracao"));
+                        System.out.println("============================================");
+                    }
+                }
+            } catch (SQLException e) {
+                System.out.println("Erro ao exibir usuários: " + e.getMessage());
+            }
         }
     }
 

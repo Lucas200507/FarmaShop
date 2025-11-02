@@ -16,7 +16,7 @@ public class Main {
 
             switch (opcao) {
                 case 1:
-                    Usuario.exibirUsuarios();
+                    Usuario.exibirUsuarios("todos");
                     break;
                 case 2:
                     Cliente.exibirClientes();
