@@ -1,7 +1,5 @@
--- #################################################################
+
 -- 1. CRIAÇÃO DO BANCO DE DADOS E FUNÇÃO DE GERAÇÃO DE ID
--- (Nomes de tabelas e colunas ajustados para camelCase)
--- #################################################################
 
 CREATE DATABASE FarmaShop;
 USE FarmaShop;
@@ -19,7 +17,7 @@ DELIMITER ;
 -- 2. TABELAS OBRIGATÓRIAS E ESTRUTURA BASE 
 -- =================================================================
 
--- Tabela Grupos de Usuários (gruposUsuarios)
+-- Tabela Grupos de Usuários 
 CREATE TABLE gruposUsuarios (
 id INT PRIMARY KEY,
 nome VARCHAR(50) UNIQUE NOT NULL,
@@ -230,7 +228,7 @@ END IF;
 END$$
 DELIMITER ;
 
--- 6. PROCEDURES E VIEWS (ajustados para camelCase)
+-- 6. PROCEDURES E VIEWS
 
 -- PROCEDURE: sp_atualizar_estoque
 DELIMITER $$
@@ -260,7 +258,7 @@ JOIN enderecos e ON f.endereco_id = e.id
 JOIN usuarios u ON f.usuario_id = u.id
 WHERE u.situacao = 'ativo';
 
--- VIEW 2: vw_produtos_em_promocao (usa farmaciaId, nomeFantasia)
+-- VIEW 2: vw_produtos_em_promocao 
 CREATE VIEW vw_produtos_em_promocao AS
 SELECT
 p.id AS produto_id, p.nome AS produtoNome, p.preco,
