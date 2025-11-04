@@ -1,7 +1,8 @@
 -- 1. CRIAÇÃO DO BANCO DE DADOS E FUNÇÃO DE GERAÇÃO DE ID
+
 CREATE DATABASE FarmaShop;
 USE FarmaShop;
-
+-- FAÇA ESTA FUNÇÃO PARA GERAR CÓDIGOS DO PRODUTO COM 5 DÍGITOS
 -- FUNÇÃO OBRIGATÓRIA: Regra Própria para Geração de IDs (UUID/GUID)
 DELIMITER //
 CREATE FUNCTION fn_gerar_id() RETURNS CHAR(5)
@@ -31,6 +32,8 @@ email VARCHAR(60) NOT NULL UNIQUE,
 senha VARCHAR(255) NOT NULL,
 dataAlteracao TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
+
+SELECT u.*, gu.nome AS tipo, gu.id AS grupoId FROM usuarioGrupo ug LEFT JOIN usuarios u ON u.id = ug.usuario_id LEFT JOIN gruposUsuarios gu ON gu.id = ug.grupo_id where u.id = 1;
 
 -- CRIPTOGRAFIA DA SENHA
 DELIMITER //
@@ -285,6 +288,7 @@ SELECT * FROM vw_usuarios;
 -- VIEW 3: vw_usuarios
 CREATE VIEW vw_usuarios AS 
 SELECT 
+u.id,
 u.email,
 u.senha,
 g.nome AS grupo,
