@@ -33,6 +33,19 @@ senha VARCHAR(255) NOT NULL,
 dataAlteracao TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
+-- CRIPTOGRAFIA DA SENHA
+DELIMITER //
+CREATE TRIGGER senha_login
+BEFORE INSERT 
+ON usuarios FOR EACH ROW 
+BEGIN
+SET NEW.senha = UPPER(MD5(NEW.senha));
+END 
+//
+DELIMITER ;
+
+INSERT INTO usuarios (email,senha) VALUES ('adm@','321'), ('cliente@','123'), ('farmacia@', '123');
+
 -- Tabela de Relacionamento 
 CREATE TABLE usuarioGrupo (
 usuario_id CHAR(36) NOT NULL, 
@@ -41,6 +54,7 @@ PRIMARY KEY (usuario_Id, grupo_id),
 FOREIGN KEY (usuario_id) REFERENCES usuarios (id),
 FOREIGN KEY (grupo_id) REFERENCES gruposUsuarios (id)
 );
+INSERT INTO usuarioGrupo (usuario_id, grupo_id) VALUES ('a70d026b-b918-11f0-aa56-b06ebfd164da', 1), ('a70d46e4-b918-11f0-aa56-b06ebfd164da', 2), ('a70d487b-b918-11f0-aa56-b06ebfd164da', 3);
 
 -- Tabela para log de auditoria de segurança 
 CREATE TABLE logAlteracoesSenha (
