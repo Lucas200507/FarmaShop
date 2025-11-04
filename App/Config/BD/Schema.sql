@@ -1,16 +1,15 @@
-
 -- 1. CRIAÇÃO DO BANCO DE DADOS E FUNÇÃO DE GERAÇÃO DE ID
 
 CREATE DATABASE FarmaShop;
 USE FarmaShop;
 
 -- FUNÇÃO OBRIGATÓRIA: Regra Própria para Geração de IDs (UUID/GUID)
-DELIMITER $$
+DELIMITER //
 CREATE FUNCTION fn_gerar_uuid() RETURNS CHAR(36)
 DETERMINISTIC
 BEGIN
 RETURN UUID();
-END$$
+END //
 DELIMITER ;
 
 -- =================================================================
@@ -23,6 +22,7 @@ id INT PRIMARY KEY,
 nome VARCHAR(50) UNIQUE NOT NULL,
 descricao VARCHAR(255)
 );
+INSERT INTO gruposUsuarios (id, nome, descricao) VALUES (2, 'cliente', 'acesso a páginas de clientes'),(3, 'farmacia' ,'acesso a todas as páginas, exceto de cartão'),(1,'adm' ,'acesso a todas as páginas');
 
 -- Tabela Usuários
 CREATE TABLE usuarios(
@@ -101,7 +101,6 @@ alvara_sanitario VARCHAR(50) NOT NULL,
 responsavel_tecnico VARCHAR(60) NOT NULL, 
 crf VARCHAR(20) NOT NULL,
 telefone VARCHAR(20) UNIQUE NOT NULL,
-email VARCHAR(60) UNIQUE NOT NULL,
 endereco_id INT NOT NULL,
 usuario_id CHAR(36) NOT NULL,
 dataCadastro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -114,6 +113,8 @@ CREATE TABLE categoria_produtos(
 id INT PRIMARY KEY AUTO_INCREMENT,
 nome VARCHAR(100) NOT NULL
 );
+
+INSERT INTO categoria_produtos(nome) VALUES ('Cosméticos'), ('Medicamento'), ('Prod. Beleza'), ('Prod. Higiene'), ('Prod. Infantil'), ('Prod. Saúde');
 
 -- Tabela Produtos
 CREATE TABLE produtos(
@@ -145,7 +146,7 @@ FOREIGN KEY (produto_id) REFERENCES produtos (id)
 -- 3. TRIGGERS PARA GERAÇÃO DE ID 
 
 -- Trigger para Usuarios
-DELIMITER $$
+DELIMITER //
 CREATE TRIGGER trg_gerar_uuid_usuarios
 BEFORE INSERT ON usuarios
 FOR EACH ROW
@@ -153,11 +154,11 @@ BEGIN
 IF NEW.id IS NULL OR NEW.id = '' THEN
 SET NEW.id = fn_gerar_uuid();
 END IF;
-END$$
+END //
 DELIMITER ;
 
 -- Trigger para Clientes
-DELIMITER $$
+DELIMITER //
 CREATE TRIGGER trg_gerar_uuid_clientes
 BEFORE INSERT ON clientes
 FOR EACH ROW
@@ -165,11 +166,11 @@ BEGIN
 IF NEW.id IS NULL OR NEW.id = '' THEN
 SET NEW.id = fn_gerar_uuid();
 END IF;
-END$$
+END //
 DELIMITER ;
 
 -- Trigger para Farmácias
-DELIMITER $$
+DELIMITER //
 CREATE TRIGGER trg_gerar_uuid_farmacias
 BEFORE INSERT ON farmacias
 FOR EACH ROW
@@ -177,11 +178,11 @@ BEGIN
 IF NEW.id IS NULL OR NEW.id = '' THEN
 SET NEW.id = fn_gerar_uuid();
 END IF;
-END$$
+END //
 DELIMITER ;
 
 -- Trigger para Produtos
-DELIMITER $$
+DELIMITER //
 CREATE TRIGGER trg_gerar_uuid_produtos
 BEFORE INSERT ON produtos
 FOR EACH ROW
@@ -189,7 +190,7 @@ BEGIN
 IF NEW.id IS NULL OR NEW.id = '' THEN
 SET NEW.id = fn_gerar_uuid();
 END IF;
-END$$
+END //
 DELIMITER ;
 
 -- 4. ÍNDICES (PARA DESEMPENHO)
@@ -204,7 +205,7 @@ ALTER TABLE produtos ADD FULLTEXT INDEX ftidx_produto_nome (nome);
 -- 5. TRIGGERS ADICIONAIS (LÓGICA DE NEGÓCIO E AUDITORIA)
 
 -- TRIGGER 5: trg_validar_maioridade 
-DELIMITER $$
+DELIMITER //
 CREATE TRIGGER trg_validar_maioridade
 BEFORE INSERT ON clientes
 FOR EACH ROW
@@ -212,11 +213,11 @@ BEGIN
 IF TIMESTAMPDIFF(YEAR, NEW.data_nascimento, CURDATE()) < 18 THEN
 SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'ERRO: O cadastro de clientes exige a maioridade (18 anos).';
 END IF;
-END$$
+END //
 DELIMITER ;
 
 -- TRIGGER 6: trg_log_senha_usuario 
-DELIMITER $$
+DELIMITER //
 CREATE TRIGGER trg_log_senha_usuario
 AFTER UPDATE ON usuarios
 FOR EACH ROW
@@ -225,13 +226,13 @@ IF OLD.senha <> NEW.senha THEN
 INSERT INTO logAlteracoesSenha (usuario_id, ipOrigem)
 VALUES (NEW.id, 'DESCONHECIDO_VIA_TRIGGER');
 END IF;
-END$$
+END //
 DELIMITER ;
 
 -- 6. PROCEDURES E VIEWS
 
 -- PROCEDURE: sp_atualizar_estoque
-DELIMITER $$
+DELIMITER //
 CREATE PROCEDURE sp_atualizar_estoque (
 IN p_produto_id CHAR(36),
 IN p_quantidadeVendida INT
@@ -244,7 +245,7 @@ WHERE id = p_produto_id;
 ELSE
 SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'ERRO: Estoque insuficiente para o produto.';
 END IF;
-END$$
+END //
 DELIMITER ;
 
 -- VIEW 1: vw_farmacias_ativas 
@@ -284,6 +285,3 @@ CREATE USER 'relatorio_user'@'%' IDENTIFIED BY 'SenhaRelatorioSomenteLeitura101'
 GRANT SELECT ON FarmaShop.* TO 'relatorio_user'@'%';
 
 FLUSH PRIVILEGES;
-
-
-
