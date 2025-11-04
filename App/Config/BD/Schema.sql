@@ -283,6 +283,17 @@ produtos p
 JOIN farmacias f ON p.farmacia_id = f.id
 WHERE p.promocao = TRUE;
 
+-- VIEW 3: vw_usuarios
+CREATE VIEW vw_usuarios AS 
+SELECT 
+u.email,
+u.senha,
+g.nome AS grupo,
+u.situacao
+FROM usuarioGrupo ug 
+LEFT JOIN usuarios u ON u.id = ug.usuario_id
+LEFT JOIN gruposUsuarios g ON g.id = ug.grupo_id;
+
 -- 7. SEGURANÇA: CRIAÇÃO DE USUÁRIOS E CONTROLE DE ACESSO
 
 -- Nível 1: Administrador (DBA)
