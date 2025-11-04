@@ -88,7 +88,7 @@ public class Cliente {
 
         switch (opcao) {
             case 1 -> inserirCliente(sc);
-            case 2 -> atualizarCliente(sc);
+            case 2 -> atualizarCliente(0);
             case 3 -> deletarCliente(sc);
             case 4 -> System.out.println("Saindo...");
             default -> System.out.println("Opção inválida.");
@@ -152,125 +152,121 @@ public class Cliente {
         }
     }
 
-    private static void atualizarCliente(Scanner sc) {
-        try (Connection con = Conexao.getConnection()) {
-            System.out.println("Digite o ID do cliente que deseja atualizar:");
-            int id = sc.nextInt();
-            sc.nextLine();
+    private static String lerCampoOpcional(Scanner sc, String label, String atual) {
+        System.out.print("Digite o " + label + " (ou Enter para manter: " + atual + "): ");
+        String valor = sc.nextLine();
+        return valor.isEmpty() ? "" : valor;
+    }
 
-            String sqlSelect = "SELECT * FROM clientes WHERE id = ?";
+    private static String lerCampoNumerico(Scanner sc, String label, String atual, int min, int max) {
+        while (true) {
+            System.out.print("Digite o " + label + " (" + min + " a " + max + " dígitos, ou Enter para manter: " + atual + "): ");
+            String entrada = sc.nextLine();
+
+            if (entrada.isEmpty()) return "";
+
+            if (entrada.matches("\\d{" + min + "," + max + "}")) {
+                return entrada;
+            } else {
+                System.out.println("ERRO: valor inválido. Digite apenas números com " + min + " a " + max + " dígitos.");
+            }
+        }
+    }
+
+    private static String lerCampoData(Scanner sc, String label, String atual) {
+        while (true) {
+            System.out.print("Digite a " + label + " (AAAA-MM-DD, ou Enter para manter: " + atual + "): ");
+            String entrada = sc.nextLine();
+
+            if (entrada.isEmpty()) return "";
+
+            try {
+                LocalDate.parse(entrada);
+                return entrada;
+            } catch (Exception e) {
+                System.out.println("ERRO: data inválida. Formato correto: AAAA-MM-DD.");
+            }
+        }
+    }
+
+    public static void atualizarCliente(Integer idUsuario) {
+        Scanner sc = new Scanner(System.in);
+
+        try (Connection con = Conexao.getConnection()) {
+
+            // --- Determina o cliente a ser atualizado ---
+            int idCliente;
+            if (idUsuario == null || idUsuario == 0) {
+                System.out.print("Digite o ID do cliente que deseja atualizar: ");
+                idCliente = sc.nextInt();
+                sc.nextLine(); // limpa o buffer
+            } else {
+                idCliente = idUsuario;
+            }
+
+            // --- Busca os dados atuais ---
+            String sqlSelect = (idUsuario == null || idUsuario == 0)
+                    ? "SELECT * FROM clientes WHERE id = ?"
+                    : "SELECT * FROM clientes WHERE usuario_id = ?";
+
             try (PreparedStatement stmtSelect = con.prepareStatement(sqlSelect)) {
-                stmtSelect.setInt(1, id);
+                stmtSelect.setInt(1, idCliente);
                 ResultSet rs = stmtSelect.executeQuery();
 
-                if (rs.next()) {
-                    String nomeAtual = rs.getString("nome");
-                    String cpfAtual = rs.getString("cpf");
-                    String telefoneAtual = rs.getString("telefone");
-                    String dataNascimentoAtual = rs.getString("data_nascimento"); // Data atual
-
-                    System.out.println("Digite o novo nome (ou pressione Enter para manter: " + nomeAtual + "):");
-                    String nome = sc.nextLine();
-
-                    // --- Validação/Captura do novo CPF ---
-                    String cpf = "";
-                    boolean cpfValido = false;
-                    while (!cpfValido) {
-                        System.out.println("Digite o novo CPF (11 dígitos numéricos, ou pressione Enter para manter: " + cpfAtual + "):");
-                        String cpfDigitado = sc.nextLine();
-
-                        if (cpfDigitado.isEmpty()) {
-                            cpf = ""; 
-                            cpfValido = true;
-                        } else {
-                            cpf = validarNumerosETamanho(cpfDigitado, 11, 11);
-                            if (cpf == null) {
-                                System.out.println("ERRO: CPF inválido. Digite 11 dígitos numéricos.");
-                            } else {
-                                cpfValido = true;
-                            }
-                        }
-                    }
-
-                    // --- Validação/Captura do novo Telefone ---
-                    String telefone = "";
-                    boolean telValido = false;
-                    while (!telValido) {
-                        System.out.println("Digite o novo telefone (10 ou 11 dígitos, ou pressione Enter para manter: " + telefoneAtual + "):");
-                        String telDigitado = sc.nextLine();
-                        
-                        if (telDigitado.isEmpty()) {
-                            telefone = ""; 
-                            telValido = true;
-                        } else {
-                            telefone = validarNumerosETamanho(telDigitado, 10, 11);
-                            if (telefone == null) {
-                                System.out.println("ERRO: Telefone inválido. Digite 10 ou 11 dígitos numéricos.");
-                            } else {
-                                telValido = true;
-                            }
-                        }
-                    }
-                    
-                    // --- Validação/Captura da nova Data de Nascimento ---
-                    String dataNascimento = "";
-                    boolean dataValida = false;
-                    while (!dataValida) {
-                        System.out.println("Digite a nova Data de nascimento (AAAA-MM-DD, ou pressione Enter para manter: " + dataNascimentoAtual + "):");
-                        String dataDigitada = sc.nextLine();
-
-                        if (dataDigitada.isEmpty()) {
-                            dataNascimento = ""; 
-                            dataValida = true;
-                        } else {
-                            LocalDate dataNascimentoValida = validarDataNascimento(dataDigitada);
-                            if (dataNascimentoValida != null) {
-                                // Converte para String no formato correto para o SQL
-                                dataNascimento = dataNascimentoValida.toString(); 
-                                dataValida = true;
-                            }
-                            // Se for nulo, o método validarDataNascimento já imprime o erro
-                        }
-                    }
-                    
-                    // --- Construção do SQL UPDATE ---
-                    StringBuilder sqlUpdate = new StringBuilder("UPDATE clientes SET ");
-                    boolean primeiro = true;
-
-                    if (!nome.isEmpty()) {
-                        sqlUpdate.append("nome = '").append(nome).append("'");
-                        primeiro = false;
-                    }
-                    if (!cpf.isEmpty()) {
-                        if (!primeiro) sqlUpdate.append(", ");
-                        sqlUpdate.append("cpf = '").append(cpf).append("'"); 
-                        primeiro = false;
-                    }
-                    if (!telefone.isEmpty()) {
-                        if (!primeiro) sqlUpdate.append(", ");
-                        sqlUpdate.append("telefone = '").append(telefone).append("'");
-                        primeiro = false;
-                    }
-                    if (!dataNascimento.isEmpty()) { 
-                        if (!primeiro) sqlUpdate.append(", ");
-                        sqlUpdate.append("data_nascimento = '").append(dataNascimento).append("'");
-                    }
-
-                    sqlUpdate.append(" WHERE id = ").append(id);
-
-                    if (primeiro) {
-                         System.out.println("Nenhum campo foi alterado. Operação cancelada.");
-                         return;
-                    }
-                    
-                    try (PreparedStatement stmtUpdate = con.prepareStatement(sqlUpdate.toString())) {
-                        stmtUpdate.executeUpdate();
-                        System.out.println("Cliente atualizado com sucesso!");
-                    }
-
-                } else {
+                if (!rs.next()) {
                     System.out.println("Cliente não encontrado.");
+                    return;
                 }
+
+                // Dados atuais
+                String nomeAtual = rs.getString("nome");
+                String cpfAtual = rs.getString("cpf");
+                String telefoneAtual = rs.getString("telefone");
+                String dataNascimentoAtual = rs.getString("data_nascimento");
+
+                // --- Entradas atualizadas ---
+                String nome = lerCampoOpcional(sc, "novo nome", nomeAtual);
+                String cpf = lerCampoNumerico(sc, "novo CPF", cpfAtual, 11, 11);
+                String telefone = lerCampoNumerico(sc, "novo telefone", telefoneAtual, 10, 11);
+                String dataNascimento = lerCampoData(sc, "nova Data de nascimento", dataNascimentoAtual);
+
+                // --- Monta o SQL dinamicamente ---
+                StringBuilder sqlUpdate = new StringBuilder("UPDATE clientes SET ");
+                boolean primeiro = true;
+
+                if (!nome.isEmpty()) {
+                    sqlUpdate.append("nome = '").append(nome).append("'");
+                    primeiro = false;
+                }
+                if (!cpf.isEmpty()) {
+                    if (!primeiro) sqlUpdate.append(", ");
+                    sqlUpdate.append("cpf = '").append(cpf).append("'");
+                    primeiro = false;
+                }
+                if (!telefone.isEmpty()) {
+                    if (!primeiro) sqlUpdate.append(", ");
+                    sqlUpdate.append("telefone = '").append(telefone).append("'");
+                    primeiro = false;
+                }
+                if (!dataNascimento.isEmpty()) {
+                    if (!primeiro) sqlUpdate.append(", ");
+                    sqlUpdate.append("data_nascimento = '").append(dataNascimento).append("'");
+                }
+
+                if (primeiro) {
+                    System.out.println("Nenhum campo foi alterado. Operação cancelada.");
+                    return;
+                }
+
+                sqlUpdate.append((idUsuario == null || idUsuario == 0)
+                        ? " WHERE id = " + idCliente
+                        : " WHERE usuario_id = " + idCliente);
+
+                try (PreparedStatement stmtUpdate = con.prepareStatement(sqlUpdate.toString())) {
+                    stmtUpdate.executeUpdate();
+                    System.out.println("Cliente atualizado com sucesso!");
+                }
+
             }
 
         } catch (SQLException e) {

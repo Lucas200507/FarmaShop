@@ -42,7 +42,7 @@ public class Endereco {
                         inserirEndereco(sc);
                         break;
                     case 2:
-                        atualizarEndereco(sc);
+                        atualizarEndereco(0);
                         break;
                     case 3:
                         deletarEndereco(sc);
@@ -153,7 +153,8 @@ public class Endereco {
         }
     }
 
-    private static void atualizarEndereco(Scanner sc){
+    public static void atualizarEndereco(Integer idUsuario){
+        Scanner  sc = new Scanner(System.in);
         boolean erro;
         try (Connection con = Conexao.getConnection()) {
             do{
@@ -269,45 +270,123 @@ public class Endereco {
         boolean erro = true, cancelado = false, deletado = false;
         try (Connection con = Conexao.getConnection()) {
             do {
-                System.out.println("Digite o id do endereço que gostaria alterar");
+                erro = true;
+                System.out.println("Digite o id do endereço que gostaria de alterar: ");
                 int id = sc.nextInt();
                 sc.nextLine();
+
                 try {
-                    String sql = "SELECT * FROM  enderecos WHERE id = ?";
+                    String sql = "SELECT * FROM enderecos WHERE id = ?";
                     PreparedStatement stmt = con.prepareStatement(sql);
                     stmt.setInt(1, id);
                     ResultSet rs = stmt.executeQuery();
 
-                    if(rs.next()){
-                        String op;
-                        do{
-                            System.out.println("Tem certeza que deseja deletar o Endereço ID: "+id+" ? (S / N)");
-                            op = sc.nextLine().toUpperCase();
-                            switch (op) {
-                                case "S":
-                                    String sql2 = "DELETE FROM enderecos WHERE id = ?";
-                                    PreparedStatement stmt2 = con.prepareStatement(sql2);
-                                    stmt2.setInt(1, id);
-                                    stmt2.executeUpdate();
-                                    System.out.println("Endereço deletado com sucesso!");
-                                    deletado = true;
-                                    break;
-                                case "N":
-                                    System.out.println("Exclusão de endereço cancelado!");
-                                    cancelado = true;
-                                    break;
-                                default:
-                                    System.out.println("Digite uma opção válida!");
+                    if (rs.next()) { // ← Aqui corrigido: executeQuery() retorna ResultSet
+                        erro = false;
+
+                        // ======= CEP =======
+                        String cep = "";
+                        while (!cep.matches("^\\d+$") || cep.length() != 8) {
+                            System.out.println("Digite um CEP (somente números, 8 dígitos): ");
+                            cep = sc.nextLine().trim();
+                            if (cep.length() != 8 || !cep.matches("^\\d+$")) {
+                                System.out.println("Você deve digitar 8 caracteres numéricos.");
                             }
-                        } while (!op.equals("S") && !op.equals("N"));
+                        }
+
+                        String rcep = cep.substring(0, 5) + "-" + cep.substring(5);
+
+                        // ======= Estado =======
+                        String[] estados = {
+                                "AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO",
+                                "MA", "MT", "MS", "MG", "PA", "PB", "PR", "PE", "PI",
+                                "RJ", "RN", "RS", "RO", "RR", "SC", "SP", "SE", "TO"
+                        };
+                        String estado = "";
+                        while (!Arrays.asList(estados).contains(estado)) {
+                            System.out.println("Digite a sigla do estado (ex: SP, GO, AC): ");
+                            estado = sc.nextLine().trim().toUpperCase();
+                            if (!Arrays.asList(estados).contains(estado)) {
+                                System.out.println("Opção inválida!");
+                            }
+                        }
+
+                        // ======= Cidade =======
+                        System.out.println("Digite o nome da cidade: ");
+                        String cidade = sc.nextLine().trim();
+
+                        // ======= Rua =======
+                        System.out.println("Digite o nome da rua: ");
+                        String rua = sc.nextLine().trim();
+
+                        // ======= Número =======
+                        Integer numero = null;
+                        while (true) {
+                            System.out.println("Digite o número do endereço (não obrigatório): ");
+                            String n = sc.nextLine().trim();
+
+                            if (n.isEmpty()) {
+                                break; // opcional
+                            }
+
+                            if (!n.matches("^\\d+$")) {
+                                System.out.println("Digite apenas números positivos ou deixe em branco.");
+                                continue;
+                            }
+
+                            numero = Integer.parseInt(n);
+                            if (numero <= 0) {
+                                System.out.println("O número deve ser maior que zero.");
+                                continue;
+                            }
+                            break;
+                        }
+
+                        // ======= Bairro =======
+                        System.out.println("Digite o bairro: ");
+                        String bairro = sc.nextLine().trim();
+
+                        // ======= Complemento =======
+                        System.out.println("Digite o complemento (ex: ponto de referência): ");
+                        String complemento = sc.nextLine().trim();
+
+                        // ======= Atualiza no banco =======
+                        String sql2 = "UPDATE enderecos SET cep = ?, estado = ?, cidade = ?, rua = ?, numero = ?, bairro = ?, complemento = ? WHERE id = ?";
+                        PreparedStatement stmt2 = con.prepareStatement(sql2);
+                        stmt2.setString(1, rcep);
+                        stmt2.setString(2, estado);
+                        stmt2.setString(3, cidade);
+                        stmt2.setString(4, rua);
+
+                        if (numero != null) {
+                            stmt2.setInt(5, numero);
+                        } else {
+                            stmt2.setNull(5, java.sql.Types.INTEGER);
+                        }
+
+                        stmt2.setString(6, bairro);
+                        stmt2.setString(7, complemento);
+                        stmt2.setInt(8, id);
+                        stmt2.executeUpdate();
+
+                        System.out.println("✅ Endereço atualizado com sucesso!");
+
+                        stmt2.close();
+                        stmt.close();
+                        rs.close();
+
+                    } else {
+                        System.out.println("❌ ID de endereço não encontrado.");
                     }
 
                 } catch (SQLException e) {
-                    System.out.println("Digite um id válido");
+                    throw new RuntimeException(e);
                 }
-            } while (erro && !cancelado && !deletado);
+
+            } while (erro);
+
         } catch (SQLException e) {
-            System.out.println(e.getMessage());
+            throw new RuntimeException(e);
         }
     }
 
