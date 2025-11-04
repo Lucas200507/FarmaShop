@@ -1,33 +1,70 @@
 package org.example;
 import java.util.Scanner;
 
-import Controller.*;
-
-public class Main {    
+import Controller.Cliente;
+import Controller.Endereco;
+import Controller.Usuario;
+import org.example.Login;
+public class Main {
     public static void main(String[] args) {
+        Login l = new Login();
+
+        if (l.logar()) {
+            String grupo = l.getGrupo();
+            String usuario = l.getUsuario();
+            int id = l.getId();
+            System.out.println("Bem vindo ao Sistema, " + usuario + "\n============================");
+            mostrarMenu(grupo, id);
+        }
+    }
+
+    public static void mostrarMenu(String grupo, int id){
+
         Scanner sc = new Scanner(System.in);
         int opcao = 0;
-        while(opcao != 7){
-            System.out.println("MENU:");
-            System.out.println("Escolha uma das opções: \n1.Usuários\n2.Clientes\n3.Farmácias\n4.Endereços\n5.Produtos\n6.Categorias\n7.Sair");
-            opcao = sc.nextInt();
+        if (grupo.equals("adm")){
+            while(opcao != 5){
+                System.out.println("MENU:");
+                System.out.println("Escolha uma das opções: \n1.Usuários\n2.Clientes\n3.Farmácias\n4.Endereços\n5.Sair");
+                opcao = sc.nextInt();
 
-            switch (opcao) {
-                case 1:
-                    Usuario.exibirUsuarios("todos");
-                    break;
-                case 2:
-                    Cliente.exibirClientes();
-                    break;
-                case 3:
-                    Farmacia.exibirFarmacias();
-                case 4:
-                    Endereco.exibirEnderecos();
-                    break;
-                case 5: Produtos.exibirProdutos();
-                    break;
-                case 6: CategoriaProduto.exibirCategorias();
-                    break;
+                switch (opcao) {
+                    case 1:
+                        Usuario.exibirUsuarios("todos");
+                        break;
+                    case 2:
+                        Cliente.exibirClientes();
+                        break;
+                    case 4:
+                        Endereco.exibirEnderecos();
+                        break;
+                }
+            }
+        } else if (grupo.equals("cliente")) {
+            while (opcao != 5) {
+                System.out.println("MENU:");
+                System.out.println("Escolha uma das opções: \n1.Atualizar dados Pessoais\n2.Cadastrar novo Endereço\n3.Exibir Catálogo de produtos\n4.Carrinho\n5.Sair");
+                opcao = sc.nextInt();
+
+                switch (opcao) {
+                    case 1:
+                        Cliente.atualizarCliente(id);
+                        break;
+                    case 2:
+                        Endereco.atualizarEndereco(id);
+                        break;
+                    case 3:
+                        //Produto.exibirProdutos();
+                        break;
+                    case 4:
+                        //Produto.exibirCarrinho(id);
+                        break;
+                    case 5:
+                        System.out.println("Saindo..");
+                        break;
+                    default:
+                        System.out.println("Escolha uma opção válida");
+                }
             }
         }
     }
