@@ -1,11 +1,10 @@
 -- 1. CRIAÇÃO DO BANCO DE DADOS E FUNÇÃO DE GERAÇÃO DE ID
-
 CREATE DATABASE FarmaShop;
 USE FarmaShop;
 
 -- FUNÇÃO OBRIGATÓRIA: Regra Própria para Geração de IDs (UUID/GUID)
 DELIMITER //
-CREATE FUNCTION fn_gerar_uuid() RETURNS CHAR(36)
+CREATE FUNCTION fn_gerar_id() RETURNS CHAR(5)
 DETERMINISTIC
 BEGIN
 RETURN UUID();
@@ -26,7 +25,7 @@ INSERT INTO gruposUsuarios (id, nome, descricao) VALUES (2, 'cliente', 'acesso a
 
 -- Tabela Usuários
 CREATE TABLE usuarios(
-id CHAR(36) PRIMARY KEY,
+id INT PRIMARY KEY AUTO_INCREMENT,
 situacao ENUM('ativo', 'inativo') DEFAULT 'ativo',
 email VARCHAR(60) NOT NULL UNIQUE,
 senha VARCHAR(255) NOT NULL,
@@ -48,18 +47,18 @@ INSERT INTO usuarios (email,senha) VALUES ('adm@','321'), ('cliente@','123'), ('
 
 -- Tabela de Relacionamento 
 CREATE TABLE usuarioGrupo (
-usuario_id CHAR(36) NOT NULL, 
+usuario_id INT NOT NULL, 
 grupo_id INT NOT NULL,   
 PRIMARY KEY (usuario_Id, grupo_id),
 FOREIGN KEY (usuario_id) REFERENCES usuarios (id),
 FOREIGN KEY (grupo_id) REFERENCES gruposUsuarios (id)
 );
-INSERT INTO usuarioGrupo (usuario_id, grupo_id) VALUES ('a70d026b-b918-11f0-aa56-b06ebfd164da', 1), ('a70d46e4-b918-11f0-aa56-b06ebfd164da', 2), ('a70d487b-b918-11f0-aa56-b06ebfd164da', 3);
+INSERT INTO usuarioGrupo (usuario_id, grupo_id) VALUES (1, 1), (2, 2), (3, 3);
 
 -- Tabela para log de auditoria de segurança 
 CREATE TABLE logAlteracoesSenha (
-id INT PRIMARY KEY AUTO_INCREMENT,
-usuarioId CHAR(36) NOT NULL,
+id VARCHAR(7) PRIMARY KEY,
+usuarioId INT NOT NULL,
 dataAlteracao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 ipOrigem VARCHAR(50), 
 FOREIGN KEY (usuarioId) REFERENCES usuarios (id)
@@ -67,7 +66,7 @@ FOREIGN KEY (usuarioId) REFERENCES usuarios (id)
 
 -- Tabela Endereços
 CREATE TABLE enderecos(
-id INT PRIMARY KEY AUTO_INCREMENT,
+id VARCHAR(7) PRIMARY KEY,
 cep VARCHAR(9) UNIQUE NOT NULL,
 estado ENUM('AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO') NOT NULL,
 cidade VARCHAR(60) NOT NULL,
@@ -79,22 +78,22 @@ complemento TEXT
 
 -- Tabela Clientes
 CREATE TABLE clientes(
-id CHAR(36) PRIMARY KEY,
+id INT PRIMARY KEY AUTO_INCREMENT,
 nome VARCHAR(60) NOT NULL,
 cpf VARCHAR(12) UNIQUE NOT NULL,
 telefone VARCHAR(14) UNIQUE NOT NULL,
 data_nascimento DATE NOT NULL, 
-endereco_id INT,  
-usuario_id CHAR(36) NOT NULL,  
+endereco_id VARCHAR(7),  
+usuario_id INT NOT NULL,  
 data_cadastro TIMESTAMP DEFAULT CURRENT_TIMESTAMP, 
 FOREIGN KEY (endereco_id) REFERENCES enderecos (id),
 FOREIGN KEY (usuario_id) REFERENCES usuarios (id)
 );
 
 -- Tabela Cartão
-CREATE TABLE cartao(
-id INT PRIMARY KEY AUTO_INCREMENT,
-clienteId CHAR(36) NOT NULL, 
+CREATE TABLE cartaos(
+id VARCHAR(7) PRIMARY KEY,
+clienteId INT NOT NULL, 
 nome_titular VARCHAR(100) NOT NULL, 
 bandeira ENUM('Visa','MasterCard','Elo','Amex','Hipercard','Outros') NOT NULL,
 ultimos_digitos CHAR(4) NOT NULL, 
@@ -107,7 +106,7 @@ FOREIGN KEY (clienteId) REFERENCES clientes(id)
 
 -- Tabela Farmácias
 CREATE TABLE farmacias(
-id CHAR(36) PRIMARY KEY,
+id INT PRIMARY KEY AUTO_INCREMENT,
 nome_juridico VARCHAR(150) NOT NULL,   
 nome_fantasia VARCHAR(150) NOT NULL,   
 cnpj VARCHAR(14) UNIQUE NOT NULL,
@@ -115,8 +114,8 @@ alvara_sanitario VARCHAR(50) NOT NULL,
 responsavel_tecnico VARCHAR(60) NOT NULL, 
 crf VARCHAR(20) NOT NULL,
 telefone VARCHAR(20) UNIQUE NOT NULL,
-endereco_id INT NOT NULL,
-usuario_id CHAR(36) NOT NULL,
+endereco_id VARCHAR(7) NOT NULL,
+usuario_id INT NOT NULL,
 dataCadastro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 FOREIGN KEY (endereco_id) REFERENCES enderecos (id),
 FOREIGN KEY (usuario_id) REFERENCES usuarios (id)
@@ -124,16 +123,15 @@ FOREIGN KEY (usuario_id) REFERENCES usuarios (id)
 
 -- Tabela Categoria Produtos
 CREATE TABLE categoria_produtos(
-id INT PRIMARY KEY AUTO_INCREMENT,
+id INT PRIMARY KEY,
 nome VARCHAR(100) NOT NULL
 );
 
-INSERT INTO categoria_produtos(nome) VALUES ('Cosméticos'), ('Medicamento'), ('Prod. Beleza'), ('Prod. Higiene'), ('Prod. Infantil'), ('Prod. Saúde');
+INSERT INTO categoria_produtos(id, nome) VALUES (1, 'Cosméticos'), (2, 'Medicamento'), (3, 'Prod. Beleza'), (4, 'Prod. Higiene'), (5, 'Prod. Infantil'), (6, 'Prod. Saúde');
 
 -- Tabela Produtos
 CREATE TABLE produtos(
-id CHAR(36) PRIMARY KEY,
-codigo VARCHAR(7) NOT NULL,
+COD VARCHAR(7) primary key, -- Tem que gerar o código com a trigger
 nome VARCHAR(100) NOT NULL,
 descricao TEXT NOT NULL,
 estoque INT NOT NULL,
@@ -142,67 +140,67 @@ preco DECIMAL(10, 2) NOT NULL,
 dataAlteracao TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 dataCadastro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 categoria_id INT NOT NULL, 
-farmacia_id CHAR(36) NOT NULL, 
+farmacia_id INT NOT NULL, 
 FOREIGN KEY (categoria_id) REFERENCES categoria_produtos (id),
 FOREIGN KEY (farmacia_id) REFERENCES farmacias (id)
 );
 
 -- Tabela Imagem Produtos 
 CREATE TABLE imagem_produtos(
-id INT PRIMARY KEY AUTO_INCREMENT,
-produto_id CHAR(36) NOT NULL, 
+id INT PRIMARY KEY,
+produto_cod VARCHAR(7) NOT NULL, 
 url VARCHAR(255) NOT NULL,
 pricipal BOOLEAN DEFAULT FALSE,
 ordem INT DEFAULT 0,
-FOREIGN KEY (produto_id) REFERENCES produtos (id)
+FOREIGN KEY (produto_cod) REFERENCES produtos (COD)
 );
 
 -- 3. TRIGGERS PARA GERAÇÃO DE ID 
 
--- Trigger para Usuarios
-DELIMITER //
-CREATE TRIGGER trg_gerar_uuid_usuarios
-BEFORE INSERT ON usuarios
-FOR EACH ROW
-BEGIN
-IF NEW.id IS NULL OR NEW.id = '' THEN
-SET NEW.id = fn_gerar_uuid();
-END IF;
-END //
-DELIMITER ;
-
--- Trigger para Clientes
-DELIMITER //
-CREATE TRIGGER trg_gerar_uuid_clientes
-BEFORE INSERT ON clientes
-FOR EACH ROW
-BEGIN
-IF NEW.id IS NULL OR NEW.id = '' THEN
-SET NEW.id = fn_gerar_uuid();
-END IF;
-END //
-DELIMITER ;
-
--- Trigger para Farmácias
-DELIMITER //
-CREATE TRIGGER trg_gerar_uuid_farmacias
-BEFORE INSERT ON farmacias
-FOR EACH ROW
-BEGIN
-IF NEW.id IS NULL OR NEW.id = '' THEN
-SET NEW.id = fn_gerar_uuid();
-END IF;
-END //
-DELIMITER ;
-
 -- Trigger para Produtos
 DELIMITER //
-CREATE TRIGGER trg_gerar_uuid_produtos
+CREATE TRIGGER trg_gerar_idProdutos
 BEFORE INSERT ON produtos
 FOR EACH ROW
 BEGIN
+IF NEW.COD IS NULL OR NEW.COD = '' THEN
+SET NEW.COD = fn_gerar_id();
+END IF;
+END //
+DELIMITER ;
+
+-- Trigger para Cartão
+DELIMITER //
+CREATE TRIGGER trg_gerar_idCartao
+BEFORE INSERT ON cartaos
+FOR EACH ROW
+BEGIN
 IF NEW.id IS NULL OR NEW.id = '' THEN
-SET NEW.id = fn_gerar_uuid();
+SET NEW.id = fn_gerar_id();
+END IF;
+END //
+DELIMITER ;
+
+-- Trigger para Endereços
+DELIMITER //
+CREATE TRIGGER trg_gerar_idEndereco
+BEFORE INSERT ON enderecos
+FOR EACH ROW
+BEGIN
+IF NEW.id IS NULL OR NEW.id = '' THEN
+SET NEW.id = fn_gerar_id();
+END IF;
+END //
+DELIMITER ;
+
+-- Trigger para log de alteração de senha
+DELIMITER //
+CREATE TRIGGER trg_gerar_idLog
+BEFORE INSERT ON logAlteracoesSenha
+FOR EACH ROW
+BEGIN
+IF NEW.id IS NULL OR NEW.id = '' THEN
+SET NEW.id = fn_gerar_id();
 END IF;
 END //
 DELIMITER ;
@@ -276,12 +274,13 @@ WHERE u.situacao = 'ativo';
 -- VIEW 2: vw_produtos_em_promocao 
 CREATE VIEW vw_produtos_em_promocao AS
 SELECT
-p.id AS produto_id, p.nome AS produtoNome, p.preco,
+p.COD, p.nome AS produtoNome, p.preco,
 f.nome_fantasia AS farmaciaNome
 FROM
 produtos p
 JOIN farmacias f ON p.farmacia_id = f.id
 WHERE p.promocao = TRUE;
+SELECT * FROM vw_usuarios;
 
 -- VIEW 3: vw_usuarios
 CREATE VIEW vw_usuarios AS 
