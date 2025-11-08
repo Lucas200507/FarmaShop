@@ -1,5 +1,9 @@
 package org.example;
 
+import Controller.Cliente;
+import Controller.Endereco;
+import Controller.Farmacia;
+import Controller.Usuario;
 import Database.Conexao;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -24,14 +28,46 @@ public class Login {
     }
 
     public boolean logar() {
+        String idEndereco;
+        int opcao, idUsuario, idCliente, idFarmacia;
+        boolean logado = false, valido = false;
+        Scanner sc = new Scanner(System.in);
+        Usuario u = new Usuario();
+        Endereco e = new Endereco();
+        Farmacia f = new Farmacia();
+        Cliente c =  new Cliente();
+
+        do{
+            System.out.println("\n\n\n=== LOGIN ===");
+            System.out.println("Digite:\n 1.Realizar Login\n 2.Criar uma conta Cliente\n 3.Criar uma conta Farmácia");
+            opcao = sc.nextInt();
+            sc.nextLine();
+            switch (opcao){
+                case 1:
+                    logado = realizarLogin(sc);
+                    break;
+                case 2:
+                    idUsuario = u.inserirUsuario(sc, 2); // grupo 2 = cliente
+                    idEndereco = e.inserirEndereco(sc);
+                    idCliente = c.inserirCliente(sc, idUsuario, idEndereco);
+                    break;
+                case 3:
+                    idUsuario = u.inserirUsuario(sc, 3);
+                    idEndereco = e.inserirEndereco(sc);
+                    idFarmacia = f.inserirFarmacia(sc, idUsuario, idEndereco);
+                    break;
+
+            }
+        } while (!logado);
+        return logado;
+    }
+
+    public boolean realizarLogin(Scanner sc) {
         String usuario;
         String senha;
         boolean logado = false;
-
-        System.out.println("=== LOGIN ===");
-        Scanner sc = new Scanner(System.in);
-
         do {
+
             System.out.print("Usuário: ");
             usuario = sc.nextLine();
 
@@ -60,9 +96,7 @@ public class Login {
             } catch (SQLException e) {
                 System.out.println("Erro ao verificar login: " + e.getMessage());
             }
-
         } while (!logado);
-
         return logado;
     }
 }

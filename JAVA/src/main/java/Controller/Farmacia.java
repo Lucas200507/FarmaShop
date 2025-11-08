@@ -16,12 +16,6 @@ public class Farmacia {
         return null;
     }
 
-    private static boolean validarEmail(String email){
-        if (email == null) return  false;
-        email = email.trim();
-        return !email.isEmpty() && email.contains("@") && email.indexOf('@') != 0 && email.indexOf('@') != email.length() - 1;
-    }
-
     public static void exibirFarmacias() {
         Scanner sc = new Scanner(System.in);
         System.out.println("===Farmácias===");
@@ -35,7 +29,6 @@ public class Farmacia {
                 System.out.println("Nome fantasia: " + rs.getString("nome_fantasia"));
                 System.out.println("CNPJ: " + rs.getString("cnpj"));
                 System.out.println("Telefone: " + rs.getString("telefone"));
-                System.out.println("Email: " + rs.getString("email"));
                 System.out.println
                 ("========================================================");
             }
@@ -51,30 +44,81 @@ public class Farmacia {
 
         int opcao = sc.nextInt();
         sc.nextLine();
-
+        Farmacia f = new Farmacia();
         switch (opcao) {
-            case 1 -> inserirFarmacia(sc);
-            case 2 -> atualizarFarmacia(sc);
-            case 3 -> deletarFarmacia(sc);
-            case 4 -> System.out.println("Saindo...");
-            default -> System.out.println("Opção inválida");
+            case 1:
+                int idFarmacia = f.inserirFarmacia(sc, 0, "0");
+                break;
+            case 2:
+                atualizarFarmacia(sc);
+                break;
+            case 3:
+                deletarFarmacia(sc);
+                break;
+            case 4:
+                System.out.println("Saindo...");
+                break;
+            default:
+                System.out.println("Opção inválida");
+                break;
 
         }
     }
 
-    private static void inserirFarmacia(Scanner sc) {
+    public int inserirFarmacia(Scanner sc, int idUsuario, String idEndereco) {
+        int idFarmacia = 0;
+
+        if (idUsuario == 0) {
+            boolean valido = false;
+            Usuario.exibirUsuarios("cliente");
+            do{
+                System.out.println("Escolha um id válido:");
+                if (sc.hasNextInt()) {
+                    idUsuario = sc.nextInt();
+                    if (idUsuario > 0){
+                        String sql = "SELECT * FROM usuarios WHERE id = ?";
+                        try (Connection con = Conexao.getConnection(); PreparedStatement stmt = con.prepareStatement(sql)) {
+                            stmt.setInt(1, idUsuario);
+                            ResultSet rs = stmt.executeQuery();
+                            if (rs.next()){
+                                valido = true;
+                            } else {
+                                idUsuario = 0;
+                            }
+                        } catch (SQLException e) {
+                            throw new RuntimeException(e);
+                        }
+                    }
+                } else {
+                    System.out.println("Valor inválido! Não é um número inteiro.");
+                    sc.nextLine(); // limpa o buffer
+                }
+            } while(!valido);
+        }
+
+        if (idEndereco.equals("0")) {
+            boolean valido = false;
+            Endereco.exibirEnderecos("cliente");
+            do{
+                System.out.println("Escolha um id válido:");
+                idEndereco = sc.nextLine();
+                String sql = "SELECT * FROM enderecos WHERE id = ?";
+                try (Connection con = Conexao.getConnection(); PreparedStatement stmt = con.prepareStatement(sql)) {
+                    stmt.setString(1, idEndereco);
+                    ResultSet rs = stmt.executeQuery();
+                    if (rs.next()){
+                        valido = true;
+                    } else {
+                        idEndereco = "0";
+                    }
+                } catch (SQLException e) {
+                    throw new RuntimeException(e);
+                }
+            } while(!valido);
+        }
+
 
         try (Connection con = Conexao.getConnection()) {
-
-            System.out.println("Escolha o usuário (usuario_id) vinculado à farmácia: ");
-            Usuario.exibirUsuarios("farmacia");
-
-            System.out.println("Digite o usuario_id (inteiro) referente a essa farmácia: ");
-            int usuarioId = Integer.parseInt(sc.nextLine());
-
-            System.out.println("Digite o ID do endereco (endereco_id) já cadastrado:");
-            int enderecoId = Integer.parseInt(sc.nextLine());
-
             System.out.println("Digite o nome jurídico (razão social):");
             String nomeJuridico = sc.nextLine();
 
@@ -108,15 +152,8 @@ public class Farmacia {
                 if (telefoneValidado == null) System.out.println("Telefone inválido.");
             } while (telefoneValidado == null);
 
-            String email;
-            do {
-                System.out.println("Digite o email:");
-                email = sc.nextLine();
-                if (!validarEmail(email)) System.out.println("Email inválido.");
-            } while (!validarEmail(email));
-
-            String sql = "INSERT INTO farmacias (nome_juridico, nome_fantasia, cnpj, alvara_sanitario, responsavel_tecnico, crf, telefone, email, endereco_id, usuario_id) " +
-                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            String sql = "INSERT INTO farmacias (nome_juridico, nome_fantasia, cnpj, alvara_sanitario, responsavel_tecnico, crf, telefone, endereco_id, usuario_id) " +
+                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
             try (PreparedStatement stmt = con.prepareStatement(sql)) {
                 stmt.setString(1, nomeJuridico);
@@ -126,12 +163,18 @@ public class Farmacia {
                 stmt.setString(5, responsavel);
                 stmt.setString(6, crf);
                 stmt.setString(7, telefoneValidado);
-                stmt.setString(8, email);
-                stmt.setInt(9, enderecoId);
-                stmt.setInt(10, usuarioId);
+                stmt.setString(8, idEndereco);
+                stmt.setInt(9, idUsuario);
 
                 stmt.executeUpdate();
                 System.out.println("Farmácia inserida com sucesso!");
+                String sql4 = "SELECT id FROM farmacias ORDER BY id DESC LIMIT 1";
+                try (PreparedStatement stmt4 = con.prepareStatement(sql4)) {
+                    ResultSet rs = stmt4.executeQuery();
+                    if (rs.next()){
+                        idFarmacia = rs.getInt("id");
+                    }
+                }
             } catch (SQLException e) {
                 System.out.println("Erro ao inserir farmácia: " + e.getMessage());
             }
@@ -139,6 +182,8 @@ public class Farmacia {
         } catch (SQLException e) {
             System.out.println("Erro de conexão: " + e.getMessage());
         }
+
+        return idFarmacia;
     }
 
     private static void atualizarFarmacia(Scanner sc) {
@@ -162,7 +207,6 @@ public class Farmacia {
                String responsavelAtual = rs.getString("responsavel_tecnico");
                String crfAtual = rs.getString("crf");
                String telefoneAtual = rs.getString("telefone");
-               String emailAtual = rs.getString("email");
                int enderecoAtual = rs.getInt("endereco_id");
                int usuarioAtual = rs.getInt("usuario_id");
 
@@ -207,18 +251,6 @@ public class Farmacia {
                     }
                 }
 
-                String email = "";
-                boolean emailValido = false;
-                while (!emailValido) {
-                    System.out.println("Digite o novo email (ou Enter para manter: " + emailAtual + "):");
-                    String emailDigitado = sc.nextLine();
-                    if (emailDigitado.isEmpty()) { email = ""; emailValido = true; }
-                    else {
-                        if (validarEmail(emailDigitado)) { email = emailDigitado; emailValido = true; }
-                        else System.out.println("Email inválido.");
-                    }
-                }
-
                 System.out.println("Digite novo endereco_id (ou Enter para manter: " + enderecoAtual + "):");
                 String enderecoStr = sc.nextLine();
                 Integer enderecoId = enderecoStr.isEmpty() ? null : Integer.parseInt(enderecoStr);
@@ -234,7 +266,6 @@ public class Farmacia {
                 if (!responsavel.isEmpty()) { if(!first) sql.append(", "); sql.append("responsavel_tecnico = ?"); params.add(responsavel); first = false; }
                 if (!crf.isEmpty()) { if(!first) sql.append(", "); sql.append("crf = ?"); params.add(crf); first = false; }
                 if (!telefone.isEmpty()) { if(!first) sql.append(", "); sql.append("telefone = ?"); params.add(telefone); first = false; }
-                if (!email.isEmpty()) { if(!first) sql.append(", "); sql.append("email = ?"); params.add(email); first = false; }
                 if (enderecoId != null) { if(!first) sql.append(", "); sql.append("endereco_id = ?"); params.add(enderecoId); first = false; }
 
                 if (params.isEmpty()) {
