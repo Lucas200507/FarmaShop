@@ -51,7 +51,7 @@ public class Usuario {
             }
 
         } else {
-            String sql = "SELECT * FROM usuarios WHERE tipo = ?";
+            String sql = "SELECT u.*, gu.nome AS tipo FROM usuarioGrupo ug LEFT JOIN usuarios u ON u.id = ug.usuario_id LEFT JOIN gruposUsuarios gu ON gu.id = ug.grupo_id WHERE u.situacao = 'ativo' AND gu.nome = ?;";
             try (Connection con = Conexao.getConnection();
                  PreparedStatement stmt = con.prepareStatement(sql)){
                     stmt.setString(1, tipo);

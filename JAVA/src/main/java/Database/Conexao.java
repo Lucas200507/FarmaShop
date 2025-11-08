@@ -7,17 +7,17 @@ import java.sql.Statement;
 
 public class Conexao {
     //Marilia
-/*
+
     private static final String url = "jdbc:mysql://127.0.0.1:3306/FarmaShop";
     private static final String user = "root";
     private static final String pss = "25112006";
-*/
-    // lucas
 
+    // lucas
+/*
     private static final String url = "jdbc:mysql://127.0.0.1:3306/FarmaShop";
     private static final String user = "root";
     private static final String pss = "";
-
+*/
 /*
     // catolica
     private static final String url = "jdbc:mysql://localhost:3307/FarmaShop";

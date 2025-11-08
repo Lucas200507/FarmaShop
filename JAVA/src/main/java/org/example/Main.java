@@ -2,6 +2,7 @@ package org.example;
 import java.util.Scanner;
 
 import Controller.Cliente;
+import Controller.Farmacia;
 import Controller.Endereco;
 import Controller.Usuario;
 import org.example.Login;
@@ -34,6 +35,9 @@ public class Main {
                         break;
                     case 2:
                         Cliente.exibirClientes();
+                        break;
+                    case 3:
+                        Farmacia.exibirFarmacias();
                         break;
                     case 4:
                         Endereco.exibirEnderecos();
