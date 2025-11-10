@@ -20,6 +20,7 @@ public class Main {
     }
 
     public static void mostrarMenu(String grupo, int id){
+        Usuario u = new  Usuario();
 
         Scanner sc = new Scanner(System.in);
         int opcao = 0;
@@ -31,7 +32,7 @@ public class Main {
 
                 switch (opcao) {
                     case 1:
-                        Usuario.exibirUsuarios("todos");
+                        u.exibirUsuarios("todos");
                         break;
                     case 2:
                         Cliente.exibirClientes();
@@ -40,7 +41,7 @@ public class Main {
                         Farmacia.exibirFarmacias();
                         break;
                     case 4:
-                        Endereco.exibirEnderecos();
+                        Endereco.exibirEnderecos("adm");
                         break;
                 }
             }

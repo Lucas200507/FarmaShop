@@ -51,9 +51,6 @@ public class Cliente {
         }
     }
 
-    // ANTES DE INSERIR UM NOVO CLIENTE, PRECISA IMPRIMIR TODOS OS USUÁRIOS COM TIPO = CLIENTE
-    // A pessoa deve escolher o id do usuário referencte ao cliente que ele está criando
-
     public static void exibirClientes() {
         Scanner sc = new Scanner(System.in);
         System.out.println("=== CLIENTES ===");
@@ -85,20 +82,79 @@ public class Cliente {
 
         int opcao = sc.nextInt();
         sc.nextLine();
-
+        Cliente c = new Cliente();
         switch (opcao) {
-            case 1 -> inserirCliente(sc);
-            case 2 -> atualizarCliente(0);
-            case 3 -> deletarCliente(sc);
-            case 4 -> System.out.println("Saindo...");
-            default -> System.out.println("Opção inválida.");
+            case 1:
+                int idCliente = c.inserirCliente(sc ,0, "0");
+                break;
+            case 2:
+                atualizarCliente(0);
+                break;
+            case 3:
+                deletarCliente(sc);
+                break;
+            case 4:
+                System.out.println("Saindo...");
+                break;
+            default:
+                System.out.println("Opção inválida.");
+                break;
         }
     }
 
-    private static void inserirCliente(Scanner sc) {
-        // IRÁ EXIBIR OS USUARIOS DO TIPO CLIENTE, agora, deve implementar o código para a pessoa escolher o id do usuário e cadastrá-lo na tabela clientes
-        // Para atualizar o cliente, não deve ser permitido alterar o id Usuário
-        Usuario.exibirUsuarios("cliente");
+    public int inserirCliente(Scanner sc, int idUsuario, String idEndereco) {
+        int usuario_id  = 0, idCliente = 0;
+        String endereco_id = "0";
+        if (idUsuario == 0) {
+            boolean valido = false;
+            Usuario.exibirUsuarios("cliente");
+            do{
+                System.out.println("Escolha um id válido:");
+                if (sc.hasNextInt()) {
+                    usuario_id = sc.nextInt();
+                    if (usuario_id > 0){
+                        String sql = "SELECT * FROM usuarios WHERE id = ?";
+                        try (Connection con = Conexao.getConnection(); PreparedStatement stmt = con.prepareStatement(sql)) {
+                            stmt.setInt(1, usuario_id);
+                            ResultSet rs = stmt.executeQuery();
+                            if (rs.next()){
+                                valido = true;
+                            } else {
+                                usuario_id = 0;
+                            }
+                        } catch (SQLException e) {
+                            throw new RuntimeException(e);
+                        }
+                    }
+                } else {
+                    System.out.println("Valor inválido! Não é um número inteiro.");
+                    sc.nextLine(); // limpa o buffer
+                }
+            } while(!valido);
+        }
+
+        if (idEndereco.equals("0")) {
+            boolean valido = false;
+            Endereco.exibirEnderecos("cliente");
+            do{
+                System.out.println("Escolha um id válido:");
+                endereco_id = sc.nextLine();
+                String sql = "SELECT * FROM enderecos WHERE id = ?";
+                try (Connection con = Conexao.getConnection(); PreparedStatement stmt = con.prepareStatement(sql)) {
+                    stmt.setString(1, endereco_id);
+                    ResultSet rs = stmt.executeQuery();
+                    if (rs.next()){
+                        valido = true;
+                    } else {
+                        endereco_id = "0";
+                    }
+                } catch (SQLException e) {
+                    throw new RuntimeException(e);
+                }
+            } while(!valido);
+        }
+
+
         try (Connection con = Conexao.getConnection()) {
             String nome, cpfValidado, telefoneValidado;
             LocalDate dataNascimentoValida = null;
@@ -136,20 +192,34 @@ public class Cliente {
             } while (dataNascimentoValida == null);
 
             // --- Inserção no Banco de Dados (usando os valores validados) ---
-            String sql = "INSERT INTO clientes (nome, cpf, telefone, data_nascimento) VALUES (?, ?, ?, ?)";
+
+            String sql = "INSERT INTO clientes (nome, cpf, telefone, data_nascimento, usuario_id, endereco_id) VALUES (?, ?, ?, ?, ?, ?)";
             try (PreparedStatement stmt = con.prepareStatement(sql)) {
                 stmt.setString(1, nome);
                 stmt.setString(2, cpfValidado);
                 stmt.setString(3, telefoneValidado);
                 stmt.setDate(4, Date.valueOf(dataNascimentoValida)); 
-                
+                if(idUsuario == 0) {stmt.setInt(5, usuario_id);}else{stmt.setInt(5, idUsuario);}
+                if(idEndereco.equals("0")) {stmt.setString(6, endereco_id);}else{stmt.setString(6, idEndereco);}
+
                 stmt.executeUpdate();
                 System.out.println("Cliente inserido com sucesso!");
+                String sql2 = "SELECT id FROM clientes ORDER BY id DESC LIMIT 1";
+                try(PreparedStatement stmt2 = con.prepareStatement(sql2)){
+                    ResultSet rs = stmt2.executeQuery();
+                    if (rs.next()){
+                        idCliente = rs.getInt("id");
+                    }
+                } catch (SQLException e) {
+                    throw new RuntimeException(e);
+                }
+
             }
 
         } catch (SQLException e) {
             System.out.println("Erro ao inserir cliente: " + e.getMessage());
         }
+        return  idCliente;
     }
 
     private static String lerCampoOpcional(Scanner sc, String label, String atual) {

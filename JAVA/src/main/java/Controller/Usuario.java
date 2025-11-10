@@ -6,7 +6,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 
+
 public class Usuario {
+    private static boolean validarEmail(String email){
+        if (email == null) return  false;
+        email = email.trim();
+        return !email.isEmpty() && email.contains("@") && email.indexOf('@') != 0 && email.indexOf('@') != email.length() - 1;
+    }
+
     public static void exibirUsuarios(String tipo) {
         Scanner sc = new Scanner(System.in);
         System.out.println("=== USUÁRIOS ===");
@@ -41,13 +48,24 @@ public class Usuario {
             System.out.println("4. Sair da aba usuários");
             int opcao = sc.nextInt();
             sc.nextLine();
+            Usuario u = new Usuario();
 
             switch (opcao) {
-                case 1 -> inserirUsuario(sc);
-                case 2 -> atualizarUsuario(sc);
-                case 3 -> deletarUsuario(sc);
-                case 4 -> System.out.println("Saindo...");
-                default -> System.out.println("Opção inválida.");
+                case 1:
+                    int idUsuario = u.inserirUsuario(sc, 0);
+                    break;
+                case 2:
+                    atualizarUsuario(sc);
+                    break;
+                case 3:
+                    deletarUsuario(sc);
+                    break;
+                case 4:
+                    System.out.println("Saindo...");
+                    break;
+                default:
+                    System.out.println("Opção inválida.");
+                    break;
             }
 
         } else {
@@ -72,10 +90,10 @@ public class Usuario {
         }
     }
 
-    private static void inserirUsuario(Scanner sc) {
-        try (Connection con = Conexao.getConnection()) {
+    public int inserirUsuario(Scanner sc, int idGrupo) {
+        int idUsuario = 0;
+        if (idGrupo == 0){
             boolean errado = true;
-            int idGrupo = 0, idUsuario = 0;
             do{
                 System.out.println("Escolha o tipo de usuário:\n1.Cliente\n2.Farmácia\n3.ADM");
                 int op = sc.nextInt();
@@ -98,16 +116,14 @@ public class Usuario {
                         System.out.println("Opção inválida");
                 }
             } while(errado);
-
-
+        }
+        try (Connection con = Conexao.getConnection()) {
             String email;
             do {
                 System.out.println("Digite o email:");
                 email = sc.nextLine();
-                if (!email.contains("@") || email.isEmpty()) {
-                    System.out.println("Email inválido");
-                }
-            } while (!email.contains("@"));
+                if (!validarEmail(email)) System.out.println("Email inválido.");
+            } while (!validarEmail(email));
 
             String senha, confSenha;
             do {
@@ -148,6 +164,7 @@ public class Usuario {
         } catch (SQLException e) {
             System.out.println("Erro ao inserir usuário: " + e.getMessage());
         }
+        return idUsuario;
     }
 
     private static void atualizarUsuario(Scanner sc) {
