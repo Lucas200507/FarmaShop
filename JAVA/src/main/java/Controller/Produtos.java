@@ -7,7 +7,13 @@ import java.util.Scanner;
 
 public class Produtos {
 
-    public static void exibirProdutos() {
+    public static void favoritarProduto(){
+        System.out.println("Digite o código do produto");
+
+    }
+
+
+    public static void exibirProdutos(String tipo) {
         Scanner sc = new Scanner(System.in);
         System.out.println("=== PRODUTOS ===");
 
@@ -41,27 +47,57 @@ public class Produtos {
         }
 
         // Menu
-        System.out.println("\nEscolha uma opção:");
-        System.out.println("1. Inserir novo produto");
-        System.out.println("2. Atualizar produto");
-        System.out.println("3. Deletar produto");
-        System.out.println("4. Voltar");
-
         int opcao;
-        try {
-            opcao = Integer.parseInt(sc.nextLine());
-        } catch (Exception ex) {
-            System.out.println("Opção inválida.");
-            return;
+        System.out.println("\nEscolha uma opção:");
+        if (tipo == "cliente"){
+            System.out.println("1. Favoritar produto");
+            System.out.println("2. Inserir produto no carrinho");
+
+            try {
+                opcao = Integer.parseInt(sc.nextLine());
+            } catch (Exception ex) {
+                System.out.println("Opção inválida.");
+                return;
+            }
+
+            switch (opcao) {
+                case 1:
+                    favoritarProduto();
+                    break;
+                case 2:
+                    atualizarProduto(sc);
+                    break;
+                case 4:
+                    System.out.println("Voltando...");
+                    break;
+                default:
+                    System.out.println("Opção inválida.");
+                    break;
+            }
+        }
+        else {
+            System.out.println("1. Inserir novo produto");
+            System.out.println("2. Atualizar produto");
+            System.out.println("3. Deletar produto");
+            System.out.println("4. Voltar");
+
+            try {
+                opcao = Integer.parseInt(sc.nextLine());
+            } catch (Exception ex) {
+                System.out.println("Opção inválida.");
+                return;
+            }
+
+            switch (opcao) {
+                case 1 -> inserirProduto(sc);
+                case 2 -> atualizarProduto(sc);
+                case 3 -> deletarProduto(sc);
+                case 4 -> System.out.println("Voltando...");
+                default -> System.out.println("Opção inválida.");
+            }
         }
 
-        switch (opcao) {
-            case 1 -> inserirProduto(sc);
-            case 2 -> atualizarProduto(sc);
-            case 3 -> deletarProduto(sc);
-            case 4 -> System.out.println("Voltando...");
-            default -> System.out.println("Opção inválida.");
-        }
+
     }
 
     private static void inserirProduto(Scanner sc) {

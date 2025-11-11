@@ -1,10 +1,7 @@
 package org.example;
 import java.util.Scanner;
 
-import Controller.Cliente;
-import Controller.Farmacia;
-import Controller.Endereco;
-import Controller.Usuario;
+import Controller.*;
 import org.example.Login;
 public class Main {
     public static void main(String[] args) {
@@ -59,7 +56,7 @@ public class Main {
                         Endereco.atualizarEndereco(id);
                         break;
                     case 3:
-                        //Produto.exibirProdutos();
+                        Produtos.exibirProdutos("cliente");
                         break;
                     case 4:
                         //Produto.exibirCarrinho(id);
