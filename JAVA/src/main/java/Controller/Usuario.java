@@ -72,8 +72,8 @@ public class Usuario {
             String sql = "SELECT u.*, gu.nome AS tipo FROM usuarioGrupo ug LEFT JOIN usuarios u ON u.id = ug.usuario_id LEFT JOIN gruposUsuarios gu ON gu.id = ug.grupo_id WHERE u.situacao = 'ativo' AND gu.nome = ?;";
             try (Connection con = Conexao.getConnection();
                  PreparedStatement stmt = con.prepareStatement(sql)){
-                    stmt.setString(1, tipo);
-                    try(ResultSet rs = stmt.executeQuery()) {
+                stmt.setString(1, tipo);
+                try(ResultSet rs = stmt.executeQuery()) {
 
                     while (rs.next()) {
                         System.out.println("ID: " + rs.getInt("id"));
@@ -279,33 +279,33 @@ public class Usuario {
                 int id = sc.nextInt();
                 sc.nextLine();
                 String sql = "SELECT * FROM usuarios WHERE id = ?";
-                    try (PreparedStatement stmt = con.prepareStatement(sql)) {
-                        stmt.setInt(1, id);
-                        ResultSet rs = stmt.executeQuery();
-                        if (rs.next()){
-                            String op;
-                            do{
-                                System.out.println("Tem certeza que deseja deletar o usuário ID: "+id+" ? (S / N)");
-                                op = sc.nextLine().toLowerCase();
-                                switch (op) {
-                                    case "S":
-                                        String sql2 = "UPDATE usuarios SET situacao = 'inativo' WHERE id = ?";
-                                        PreparedStatement stmt2 = con.prepareStatement(sql2);
-                                        stmt2.setInt(1, id);
-                                        stmt2.executeUpdate();
-                                        System.out.println("Usuário deletado com sucesso!");
-                                        deletado = true;
-                                        break;
-                                    case "N":
-                                        System.out.println("Exclusão de usuário cancelado!");
-                                        cancelado = true;
-                                        break;
-                                    default:
-                                        System.out.println("Digite uma opção válida!");
-                                }
-                            } while (!op.equals("S") && !op.equals("N"));
-                        }
+                try (PreparedStatement stmt = con.prepareStatement(sql)) {
+                    stmt.setInt(1, id);
+                    ResultSet rs = stmt.executeQuery();
+                    if (rs.next()){
+                        String op;
+                        do{
+                            System.out.println("Tem certeza que deseja deletar o usuário ID: "+id+" ? (S / N)");
+                            op = sc.nextLine().toLowerCase();
+                            switch (op) {
+                                case "S":
+                                    String sql2 = "UPDATE usuarios SET situacao = 'inativo' WHERE id = ?";
+                                    PreparedStatement stmt2 = con.prepareStatement(sql2);
+                                    stmt2.setInt(1, id);
+                                    stmt2.executeUpdate();
+                                    System.out.println("Usuário deletado com sucesso!");
+                                    deletado = true;
+                                    break;
+                                case "N":
+                                    System.out.println("Exclusão de usuário cancelado!");
+                                    cancelado = true;
+                                    break;
+                                default:
+                                    System.out.println("Digite uma opção válida!");
+                            }
+                        } while (!op.equals("S") && !op.equals("N"));
                     }
+                }
             } catch (SQLException e) {
                 System.out.println("ID inválido, digite um id de um usuário válido");
             }
