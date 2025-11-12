@@ -11,6 +11,7 @@ public class Produtos {
         Scanner sc = new Scanner(System.in);
         System.out.println("=== PRODUTOS ===");
 
+<<<<<<< HEAD
         String sql = "SELECT p.id, p.codigo, p.nome, p.descricao, p.estoque, p.promocao, p.preco, p.categoria_id, p.farmacia_id, p.data_alteracao " +
                 "FROM produtos p ORDER BY p.id;";
 
@@ -46,6 +47,31 @@ public class Produtos {
         System.out.println("2. Atualizar produto");
         System.out.println("3. Deletar produto");
         System.out.println("4. Voltar");
+=======
+        // Regex atualizada para nomes de produtos (permite letras, números, ml, mg, (), etc.)
+        if (valorLimpo.matches("^[a-zA-ZÀ-ú0-9\\s.,'\\\"()%-]+$")) {
+            return valorLimpo; // Válido
+        } else {
+            System.out.println("ERRO: Nome contém símbolos inválidos.");
+            return null; // Inválido
+        }
+    }
+        System.out.println("\nDigite a opção que preferir:");
+
+        // --- MENU DINÂMICO BASEADO NO GRUPO ---
+        if (grupoNome.equals("farmacia") || grupoNome.equals("adm")) {
+            System.out.println("1. Inserir novo produto");
+            System.out.println("2. Atualizar produto");
+            System.out.println("3. Deletar produto");
+        }
+
+        if (grupoNome.equals("cliente")) {
+            System.out.println("5. Adicionar produto aos favoritos");
+            System.out.println("6. Ver meus favoritos");
+        }
+
+        System.out.println("4. Voltar ao menu principal");
+>>>>>>> e577bb65b34bed76e96b012984bae6fb044d117f
 
         int opcao;
         try {
@@ -54,6 +80,18 @@ public class Produtos {
             System.out.println("Opção inválida.");
             return;
         }
+        else {
+            System.out.println("1. Inserir novo produto");
+            System.out.println("2. Atualizar produto");
+            System.out.println("3. Deletar produto");
+            System.out.println("4. Voltar");
+
+            try {
+                opcao = Integer.parseInt(sc.nextLine());
+            } catch (Exception ex) {
+                System.out.println("Opção inválida.");
+                return;
+            }
 
         switch (opcao) {
             case 1 -> inserirProduto(sc);
@@ -62,6 +100,8 @@ public class Produtos {
             case 4 -> System.out.println("Voltando...");
             default -> System.out.println("Opção inválida.");
         }
+
+
     }
 
     private static void inserirProduto(Scanner sc) {
@@ -87,6 +127,35 @@ public class Produtos {
                 } catch (NumberFormatException e) {
                     System.out.println("Estoque inválido. Digite um número inteiro >= 0.");
                 }
+<<<<<<< HEAD
+=======
+            } while (estoque < 0);
+
+            int categoriaId = 0;
+            do {
+                System.out.print("ID da Categoria:\n 1-Cosméticos\n 2-Medicamento\n 3-Prod. Beleza\n 4-Prod. Higiene\n 5-Prod. Infantil\n 6-Prod. Saúde\n");
+                try {
+                    categoriaId = Integer.parseInt(sc.nextLine());
+                    if (categoriaId <= 0) System.out.println("ERRO: ID da categoria deve ser positivo.");
+                } catch (NumberFormatException e) {
+                    System.out.println("ERRO: Valor inválido. Use apenas números inteiros.");
+                    categoriaId = 0;
+                }
+            } while (categoriaId <= 0);
+
+
+            if (farmaciaId == 0) {
+                do {
+                    System.out.print("ID da Farmácia (ADMIN): ");
+                    try {
+                        farmaciaId = Integer.parseInt(sc.nextLine());
+                        if (farmaciaId <= 0) System.out.println("ERRO: ID da farmácia deve ser positivo.");
+                    } catch (NumberFormatException e) {
+                        System.out.println("ERRO: Valor inválido. Use apenas números inteiros.");
+                        farmaciaId = 0;
+                    }
+                } while (farmaciaId <= 0);
+>>>>>>> e577bb65b34bed76e96b012984bae6fb044d117f
             }
 
             double preco;
@@ -316,4 +385,44 @@ public class Produtos {
             return false;
         }
     }
+<<<<<<< HEAD
 }
+=======
+
+    /**
+     * Exibe os produtos favoritados por um cliente (USANDO A VIEW).
+     */
+    public static void exibirFavoritos(int clienteId) {
+        System.out.println("=== MEUS FAVORITOS ===");
+
+        // Usando a VIEW 'vw_favoritos' (que está no seu SQL)
+        String sql = "SELECT COD, produto, preco, farmacia FROM vw_favoritos WHERE cliente_id =?";
+
+        try (Connection con = Conexao.getConnection();
+             PreparedStatement stmt = con.prepareStatement(sql)) {
+
+            stmt.setInt(1, clienteId);
+            ResultSet rs = stmt.executeQuery();
+
+            boolean existe = false;
+            while (rs.next()) {
+                existe = true;
+                System.out.println("---------------------------------");
+                // CORREÇÃO: A coluna na vw_favoritos chama-se 'COD'
+                System.out.println("COD: " + rs.getString("COD"));
+                System.out.println("Produto: " + rs.getString("produto"));
+                System.out.println("Preço: R$ " + rs.getDouble("preco"));
+                System.out.println("Vendido por: " + rs.getString("farmacia"));
+            }
+            System.out.println("---------------------------------");
+
+            if (!existe) {
+                System.out.println("Você ainda não tem produtos favoritos.");
+            }
+
+        } catch (SQLException e) {
+            System.out.println("Erro ao exibir favoritos: " + e.getMessage());
+        }
+    }
+}
+>>>>>>> e577bb65b34bed76e96b012984bae6fb044d117f

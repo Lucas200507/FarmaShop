@@ -10,7 +10,30 @@ import java.time.format.DateTimeParseException;
 
 public class Cliente {
 
-    private static String validarNumerosETamanho(String valor, int tamanhoMinimo, int tamanhoMaximo) {
+    private static String validarNumerosETamanho(String valor, int tamanhoMinimo, int tamanhoMaximo, String tipo) {
+        // Fazer a verificação de telefone e cpf unicos
+        String sql = "SELECT ? FROM clientes WHERE ? = ?";
+        try {
+            Connection con = Conexao.getConnection();
+            PreparedStatement stmt = con.prepareStatement(sql);
+            stmt.setString(1, tipo);
+            stmt.setString(2, tipo);
+            stmt.setString(3, valor);
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                if(tipo.equals("cpf")){
+                    System.out.println("CPF já cadastrado no sistema.\n CPF: "+valor);
+                } else if (tipo.equals("telefone")){
+                    System.out.println("Telefone já cadastrado no sistema.\n Telefone: "+valor);
+                }
+                return null;
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+
+
+
         if (valor == null) {
             return null;
         }
@@ -166,7 +189,7 @@ public class Cliente {
             do {
                 System.out.println("Digite o CPF (11 dígitos, apenas números):");
                 String cpfDigitado = sc.nextLine();
-                cpfValidado = validarNumerosETamanho(cpfDigitado, 11, 11);
+                cpfValidado = validarNumerosETamanho(cpfDigitado, 11, 11, "cpf");
                 if (cpfValidado == null) {
                     System.out.println("ERRO: CPF inválido. Digite 11 dígitos numéricos.");
                 }
@@ -176,7 +199,7 @@ public class Cliente {
             do {
                 System.out.println("Digite o telefone (10 ou 11 dígitos, apenas números. Ex: DD + Número):");
                 String telDigitado = sc.nextLine();
-                telefoneValidado = validarNumerosETamanho(telDigitado, 10, 11);
+                telefoneValidado = validarNumerosETamanho(telDigitado, 10, 11, "telefone");
                 if (telefoneValidado == null) {
                     System.out.println("ERRO: Telefone inválido. Digite 10 ou 11 dígitos numéricos (incluindo o DDD).");
                 }
@@ -188,7 +211,7 @@ public class Cliente {
                 String dataNascimentoDigitada = sc.nextLine();
 
                 dataNascimentoValida = validarDataNascimento(dataNascimentoDigitada);
-                // O método já imprime o erro se for nulo
+
             } while (dataNascimentoValida == null);
 
             // --- Inserção no Banco de Dados (usando os valores validados) ---

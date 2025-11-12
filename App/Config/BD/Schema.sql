@@ -148,6 +148,14 @@ FOREIGN KEY (categoria_id) REFERENCES categoria_produtos (id),
 FOREIGN KEY (farmacia_id) REFERENCES farmacias (id)
 );
 
+-- Tabela de Favoritos
+CREATE TABLE prod_favoritos(
+cliente_id INT NOT NULL,
+produto_cod VARCHAR(7) NOT NULL,
+FOREIGN KEY (cliente_id) REFERENCES clientes(id),
+FOREIGN KEY (produto_cod) REFERENCES produtos(COD)
+);
+
 -- Tabela Imagem Produtos 
 CREATE TABLE imagem_produtos(
 id INT PRIMARY KEY,
@@ -313,3 +321,4 @@ CREATE USER 'relatorio_user'@'%' IDENTIFIED BY 'SenhaRelatorioSomenteLeitura101'
 GRANT SELECT ON FarmaShop.* TO 'relatorio_user'@'%';
 
 FLUSH PRIVILEGES;
+
