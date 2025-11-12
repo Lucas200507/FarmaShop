@@ -188,7 +188,7 @@ public class Produtos {
 
             int categoriaId = 0;
             do {
-                System.out.print("ID da Categoria (1-Cosméticos, 2-Medicamento, ...): ");
+                System.out.print("ID da Categoria:\n 1-Cosméticos\n 2-Medicamento\n 3-Prod. Beleza\n 4-Prod. Higiene\n 5-Prod. Infantil\n 6-Prod. Saúde\n");
                 try {
                     categoriaId = Integer.parseInt(sc.nextLine());
                     if (categoriaId <= 0) System.out.println("ERRO: ID da categoria deve ser positivo.");
@@ -441,7 +441,7 @@ public class Produtos {
         System.out.println("=== MEUS FAVORITOS ===");
 
         // Usando a VIEW 'vw_favoritos' (que está no seu SQL)
-        String sql = "SELECT * FROM vw_favoritos WHERE cliente_id = ?";
+        String sql = "SELECT COD, produto, preco, farmacia FROM vw_favoritos WHERE cliente_id =?";
 
         try (Connection con = Conexao.getConnection();
              PreparedStatement stmt = con.prepareStatement(sql)) {
@@ -455,9 +455,9 @@ public class Produtos {
                 System.out.println("---------------------------------");
                 // CORREÇÃO: A coluna na vw_favoritos chama-se 'COD'
                 System.out.println("COD: " + rs.getString("COD"));
-                System.out.println("Nome: " + rs.getString("produtoNome"));
+                System.out.println("Produto: " + rs.getString("produto"));
                 System.out.println("Preço: R$ " + rs.getDouble("preco"));
-                System.out.println("Vendido por: " + rs.getString("farmaciaNome"));
+                System.out.println("Vendido por: " + rs.getString("farmacia"));
             }
             System.out.println("---------------------------------");
 

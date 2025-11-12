@@ -20,32 +20,19 @@ public class Main {
     public static void main(String[] args) {
         Login l = new Login();
 
-        // ==================================================================
-        // MUDANÇA PRINCIPAL AQUI:
-        // Adicionamos um loop 'while(true)' ao redor de todo o processo de login.
-        // ==================================================================
         while (true) {
 
-            // O l.logar() é a sua "Tela Inicial" (Login, Criar Cliente, Criar Farmácia)
-            // Assumindo que l.logar() retorna true se o login/cadastro foi bem-sucedido
-            // ou false se o usuário decidiu fechar o app (se houver essa opção em Login.java).
             if (l.logar()) {
                 String grupo = l.getGrupo();
                 String usuario = l.getUsuario();
 
                 int usuarioId = l.getId();
+
                 int perfilId = getPerfilId(grupo, usuarioId);
 
                 System.out.println("Bem vindo ao Sistema, " + usuario + "\n============================");
 
-                // 1. O usuário entra no menu específico do seu grupo
                 mostrarMenu(grupo, usuarioId, perfilId);
-
-                // 2. Quando o usuário seleciona "Sair" no mostrarMenu,
-                //    o método 'mostrarMenu' termina.
-
-                // 3. O loop 'while(true)' recomeça, chamando o l.logar()
-                //    novamente (voltando para a "Tela Inicial").
 
             } else {
                 // Se l.logar() retornar false (ex: usuário fechou a tela de login),
@@ -64,7 +51,7 @@ public class Main {
      */
     public static int getPerfilId(String grupo, int usuarioId) {
         String sql;
-
+        int id = 0;
         if (grupo.equals("cliente")) {
             sql = "SELECT id FROM clientes WHERE usuario_id = ?";
         } else if (grupo.equals("farmacia")) {
@@ -80,15 +67,15 @@ public class Main {
             ResultSet rs = stmt.executeQuery();
 
             if (rs.next()) {
-                return rs.getInt("id");
+                id = rs.getInt("id");
+            } else  {
+                System.out.println("Aviso: Usuário logado mas sem perfil (cliente/farmácia) associado.");
             }
 
         } catch (SQLException e) {
             System.out.println("Erro crítico ao buscar perfil: " + e.getMessage());
         }
-
-        System.out.println("Aviso: Usuário logado mas sem perfil (cliente/farmácia) associado.");
-        return 0; // Não encontrou
+        return id;
     }
 
     /**
@@ -143,14 +130,13 @@ public class Main {
             }
         } else if (grupo.equals("cliente")) {
             // Loop do Cliente. Termina quando 'opcao' for 5
-            while (opcao != 5) {
+            while (opcao != 4) {
                 System.out.println("\nMENU CLIENTE:");
                 System.out.println("Escolha uma das opções: ");
                 System.out.println("1. Atualizar dados Pessoais");
                 System.out.println("2. Atualizar meu Endereço");
                 System.out.println("3. Ver Produtos (e Favoritos)");
-                System.out.println("4. Gerenciar Formas de Pagamento");
-                System.out.println("5. Sair (Voltar à tela inicial)"); // "Sair"
+                System.out.println("4. Sair (Voltar à tela inicial)"); // "Sair"
 
                 try {
                     opcao = Integer.parseInt(sc.nextLine());
@@ -167,9 +153,6 @@ public class Main {
                         Produtos.exibirProdutos(sc, grupo, perfilId);
                         break;
                     case 4:
-                        FormaPagamento.gerenciarFormasPagamento(sc, perfilId);
-                        break;
-                    case 5:
                         System.out.println("Fazendo logout...");
                         break; // Quebra o 'while(opcao != 5)' e retorna ao Main
                     default:
