@@ -12,7 +12,7 @@ import Controller.Farmacia;
 import Controller.Endereco;
 import Controller.Usuario;
 import Controller.Produtos;
-import Controller.FormaPagamento;
+import Controller.FormaPagamento; // <-- Já estava aqui, ótimo!
 import Database.Conexao;
 import org.example.Login;
 
@@ -25,18 +25,13 @@ public class Main {
             if (l.logar()) {
                 String grupo = l.getGrupo();
                 String usuario = l.getUsuario();
-
                 int usuarioId = l.getId();
-
                 int perfilId = getPerfilId(grupo, usuarioId);
 
                 System.out.println("Bem vindo ao Sistema, " + usuario + "\n============================");
-
                 mostrarMenu(grupo, usuarioId, perfilId);
 
             } else {
-                // Se l.logar() retornar false (ex: usuário fechou a tela de login),
-                // nós quebramos o loop principal e encerramos o app.
                 System.out.println("Encerrando FarmaShop. Volte sempre!");
                 break;
             }
@@ -69,7 +64,8 @@ public class Main {
             if (rs.next()) {
                 id = rs.getInt("id");
             } else  {
-                System.out.println("Aviso: Usuário logado mas sem perfil (cliente/farmácia) associado.");
+                // Não é um erro, ADM não tem perfil, e novos usuários podem não ter
+                // System.out.println("Aviso: Usuário logado mas sem perfil (cliente/farmácia) associado.");
             }
 
         } catch (SQLException e) {
@@ -129,14 +125,18 @@ public class Main {
                 }
             }
         } else if (grupo.equals("cliente")) {
+            // =================================================================
+            // CORREÇÃO AQUI
+            // =================================================================
             // Loop do Cliente. Termina quando 'opcao' for 5
-            while (opcao != 4) {
+            while (opcao != 5) { // <-- MUDADO DE 4 PARA 5
                 System.out.println("\nMENU CLIENTE:");
                 System.out.println("Escolha uma das opções: ");
                 System.out.println("1. Atualizar dados Pessoais");
                 System.out.println("2. Atualizar meu Endereço");
                 System.out.println("3. Ver Produtos (e Favoritos)");
-                System.out.println("4. Sair (Voltar à tela inicial)"); // "Sair"
+                System.out.println("4. Gerenciar Formas de Pagamento"); // <-- ADICIONADO
+                System.out.println("5. Sair (Voltar à tela inicial)"); // <-- MUDADO DE 4 PARA 5
 
                 try {
                     opcao = Integer.parseInt(sc.nextLine());
@@ -152,13 +152,20 @@ public class Main {
                     case 3:
                         Produtos.exibirProdutos(sc, grupo, perfilId);
                         break;
-                    case 4:
+                    case 4: // <-- ADICIONADO
+                        // Chama o controller de pagamento, passando o ID do cliente (perfilId)
+                        FormaPagamento.gerenciarFormasPagamento(sc, perfilId);
+                        break;
+                    case 5: // <-- MUDADO DE 4 PARA 5
                         System.out.println("Fazendo logout...");
-                        break; // Quebra o 'while(opcao != 5)' e retorna ao Main
+                        break; // Quebra o 'while' e retorna ao Main
                     default:
                         System.out.println("Escolha uma opção válida");
                 }
             }
+            // =================================================================
+            // FIM DA CORREÇÃO
+            // =================================================================
         } else if (grupo.equals("farmacia")) {
             // Loop da Farmácia. Termina quando 'opcao' for 4
             while (opcao != 4) {
