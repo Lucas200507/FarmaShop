@@ -30,35 +30,35 @@ public class Endereco {
                 System.out.println("Complemento: "+rs.getString("complemento"));
                 System.out.println("====================================================");
             }
-        if (tipo == "adm"){
-            System.out.println("\nDigite a opção que preferir:");
-            System.out.println("1. Inserir novo endereço");
-            System.out.println("2. Atualizar endereço");
-            System.out.println("3. Deletar endereço");
-            System.out.println("4. Sair da aba endereço");
-            int opcao = sc.nextInt();
-            sc.nextLine();
-            Endereco e = new Endereco();
-            do {
-                switch (opcao) {
-                    case 1:
-                        String idEndereco = e.inserirEndereco(sc);
-                        break;
-                    case 2:
-                        atualizarEndereco(0);
-                        break;
-                    case 3:
-                        deletarEndereco(0);
-                        break;
-                    case 4:
-                        System.out.println("Saindo...");
-                        break;
-                    default:
-                        System.out.println("Opção inválida");
-                        break;
-                }
-            } while (opcao!=1&&opcao!=2&&opcao!=3&&opcao!=4);
-        }
+            if (tipo == "adm"){
+                System.out.println("\nDigite a opção que preferir:");
+                System.out.println("1. Inserir novo endereço");
+                System.out.println("2. Atualizar endereço");
+                System.out.println("3. Deletar endereço");
+                System.out.println("4. Sair da aba endereço");
+                int opcao = sc.nextInt();
+                sc.nextLine();
+                Endereco e = new Endereco();
+                do {
+                    switch (opcao) {
+                        case 1:
+                            String idEndereco = e.inserirEndereco(sc);
+                            break;
+                        case 2:
+                            atualizarEndereco(0);
+                            break;
+                        case 3:
+                            deletarEndereco(0);
+                            break;
+                        case 4:
+                            System.out.println("Saindo...");
+                            break;
+                        default:
+                            System.out.println("Opção inválida");
+                            break;
+                    }
+                } while (opcao!=1&&opcao!=2&&opcao!=3&&opcao!=4);
+            }
 
             con.close();
             stmt.close();
@@ -184,7 +184,7 @@ public class Endereco {
                 System.out.println("Digite o ID do endereço que deseja atualizar: ");
                 id = sc.nextLine();
             }
-                sel = "SELECT * FROM enderecos WHERE id = ?";
+            sel = "SELECT * FROM enderecos WHERE id = ?";
             try (PreparedStatement selStmt = con.prepareStatement(sel)) {
                 selStmt.setString(1, id);
                 ResultSet rs = selStmt.executeQuery();
