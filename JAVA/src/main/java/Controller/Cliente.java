@@ -6,15 +6,38 @@ import java.sql.*;
 import java.util.Scanner;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException; 
+import java.time.format.DateTimeParseException;
 
 public class Cliente {
 
-    private static String validarNumerosETamanho(String valor, int tamanhoMinimo, int tamanhoMaximo) {
+    private static String validarNumerosETamanho(String valor, int tamanhoMinimo, int tamanhoMaximo, String tipo) {
+        // Fazer a verificação de telefone e cpf unicos
+        String sql = "SELECT ? FROM clientes WHERE ? = ?";
+        try {
+            Connection con = Conexao.getConnection();
+            PreparedStatement stmt = con.prepareStatement(sql);
+            stmt.setString(1, tipo);
+            stmt.setString(2, tipo);
+            stmt.setString(3, valor);
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                if(tipo.equals("cpf")){
+                    System.out.println("CPF já cadastrado no sistema.\n CPF: "+valor);
+                } else if (tipo.equals("telefone")){
+                    System.out.println("Telefone já cadastrado no sistema.\n Telefone: "+valor);
+                }
+                return null;
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+
+
+
         if (valor == null) {
             return null;
         }
-        
+
         // Remove todos os caracteres que não são dígitos (0-9)
         String valorLimpo = valor.replaceAll("[^0-9]", "");
 
@@ -29,21 +52,21 @@ public class Cliente {
         if (dataStr == null || dataStr.trim().isEmpty()) {
             return null;
         }
-        
+
         // Define o formato esperado (ISO)
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-        
+
         try {
             LocalDate dataNascimento = LocalDate.parse(dataStr, formatter);
-            
+
             // Validação 2: Não pode ser uma data futura
             if (dataNascimento.isAfter(LocalDate.now())) {
                 System.out.println("ERRO: A data de nascimento não pode ser uma data futura.");
                 return null;
             }
-            
+
             return dataNascimento; // Data válida
-            
+
         } catch (DateTimeParseException e) {
             // Validação 1: Formato inválido ou data inexistente (ex: 2000-02-30)
             System.out.println("ERRO: Formato de data inválido. Use o padrão AAAA-MM-DD (ex: 1990-05-15).");
@@ -166,29 +189,29 @@ public class Cliente {
             do {
                 System.out.println("Digite o CPF (11 dígitos, apenas números):");
                 String cpfDigitado = sc.nextLine();
-                cpfValidado = validarNumerosETamanho(cpfDigitado, 11, 11); 
+                cpfValidado = validarNumerosETamanho(cpfDigitado, 11, 11, "cpf");
                 if (cpfValidado == null) {
                     System.out.println("ERRO: CPF inválido. Digite 11 dígitos numéricos.");
                 }
             } while (cpfValidado == null);
-            
+
             // --- Validação do Telefone ---
             do {
                 System.out.println("Digite o telefone (10 ou 11 dígitos, apenas números. Ex: DD + Número):");
                 String telDigitado = sc.nextLine();
-                telefoneValidado = validarNumerosETamanho(telDigitado, 10, 11);
+                telefoneValidado = validarNumerosETamanho(telDigitado, 10, 11, "telefone");
                 if (telefoneValidado == null) {
                     System.out.println("ERRO: Telefone inválido. Digite 10 ou 11 dígitos numéricos (incluindo o DDD).");
                 }
             } while (telefoneValidado == null);
-            
+
             // --- Validação de Data de Nascimento ---
             do {
                 System.out.println("Digite a Data de nascimento (AAAA-MM-DD):");
                 String dataNascimentoDigitada = sc.nextLine();
-                
+
                 dataNascimentoValida = validarDataNascimento(dataNascimentoDigitada);
-                // O método já imprime o erro se for nulo
+
             } while (dataNascimentoValida == null);
 
             // --- Inserção no Banco de Dados (usando os valores validados) ---
@@ -198,7 +221,7 @@ public class Cliente {
                 stmt.setString(1, nome);
                 stmt.setString(2, cpfValidado);
                 stmt.setString(3, telefoneValidado);
-                stmt.setDate(4, Date.valueOf(dataNascimentoValida)); 
+                stmt.setDate(4, Date.valueOf(dataNascimentoValida));
                 if(idUsuario == 0) {stmt.setInt(5, usuario_id);}else{stmt.setInt(5, idUsuario);}
                 if(idEndereco.equals("0")) {stmt.setString(6, endereco_id);}else{stmt.setString(6, idEndereco);}
 

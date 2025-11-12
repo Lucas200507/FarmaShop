@@ -69,11 +69,15 @@ public class Login {
         do {
 
             System.out.print("Usuário: ");
-            usuario = sc.nextLine();
-
+            usuario = sc.nextLine().trim();
+            if (usuario.isEmpty() || usuario.equals("")) {
+                return false;
+            }
             System.out.print("Senha: ");
-            senha = sc.nextLine();
-
+            senha = sc.nextLine().trim();
+            if (senha.isEmpty() || senha.equals("")) {
+                return false;
+            }
             String sql = "SELECT * FROM vw_usuarios WHERE email = ? AND senha = UPPER(MD5(?)) AND situacao = 'ativo'";
 
             try (Connection con = Conexao.getConnection();
