@@ -28,52 +28,6 @@ public class Produtos {
             return null; // Inválido
         }
     }
-
-    /**
-     * Exibe produtos. O menu de ações muda com base no tipo de usuário.
-     * @param sc Scanner
-     * @param grupoNome O nome do grupo do usuário logado ("cliente", "farmacia", "adm")
-     * @param perfilId O ID do Cliente ou da Farmácia logada
-     */
-    public static void exibirProdutos(Scanner sc, String grupoNome, int perfilId) {
-        System.out.println("=== CATÁLOGO DE PRODUTOS ===");
-
-        // Query que só mostra produtos de farmácias ativas
-        String sql = """
-            SELECT p.COD, p.nome, p.descricao, p.preco, p.estoque, 
-                   c.nome AS categoria, f.nome_fantasia AS farmacia, p.dataAlteracao
-            FROM produtos p
-            JOIN categoria_produtos c ON p.categoria_id = c.id
-            JOIN farmacias f ON p.farmacia_id = f.id
-            JOIN usuarios u ON f.usuario_id = u.id
-            WHERE u.situacao = 'ativo' 
-            ORDER BY p.nome;
-        """;
-
-        try (Connection con = Conexao.getConnection();
-             PreparedStatement stmt = con.prepareStatement(sql);
-             ResultSet rs = stmt.executeQuery()) {
-
-            boolean existe = false;
-            while (rs.next()) {
-                existe = true;
-                System.out.println("ID (COD): " + rs.getString("COD"));
-                System.out.println("Nome: " + rs.getString("nome"));
-                System.out.println("Descrição: " + rs.getString("descricao"));
-                System.out.println("Preço: R$ " + rs.getDouble("preco"));
-                System.out.println("Estoque: " + rs.getInt("estoque"));
-                System.out.println("Categoria: " + rs.getString("categoria"));
-                System.out.println("Farmácia: " + rs.getString("farmacia"));
-                System.out.println("Última Alteração: " + rs.getTimestamp("dataAlteracao"));
-                System.out.println("============================================");
-            }
-            if (!existe) System.out.println("Nenhum produto cadastrado.");
-
-        } catch (SQLException e) {
-            System.out.println("Erro ao exibir produtos: " + e.getMessage());
-            return;
-        }
-
         System.out.println("\nDigite a opção que preferir:");
 
         // --- MENU DINÂMICO BASEADO NO GRUPO ---
@@ -97,6 +51,18 @@ public class Produtos {
             System.out.println("Opção inválida.");
             return;
         }
+        else {
+            System.out.println("1. Inserir novo produto");
+            System.out.println("2. Atualizar produto");
+            System.out.println("3. Deletar produto");
+            System.out.println("4. Voltar");
+
+            try {
+                opcao = Integer.parseInt(sc.nextLine());
+            } catch (Exception ex) {
+                System.out.println("Opção inválida.");
+                return;
+            }
 
         switch (opcao) {
             // Opções da Farmácia/ADM
@@ -144,6 +110,8 @@ public class Produtos {
             default:
                 System.out.println("Opção inválida.");
         }
+
+
     }
 
     /**
