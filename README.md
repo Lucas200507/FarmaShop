@@ -18,7 +18,8 @@ Digite:<br>
  3.Criar uma conta Farmácia<br>
  4.Sair<br>
 
-UTLIZE ESSES USUÁRIOS PARA TESTE:<br>  usuário: cliente@ | senha: 123<br>usuário: farmacia@ | senha: 123<br>usuário: adm@ | senha: 321
+UTLIZE ESSES USUÁRIOS PARA TESTE:<br>  usuário: adm@ | senha: 321<br>
+Crie outros tipos de usuários no login.
 
 ## CLIENTE:
 Escolha uma das opções: <br>
