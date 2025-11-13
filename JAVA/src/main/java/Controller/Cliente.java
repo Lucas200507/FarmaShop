@@ -10,14 +10,6 @@ import java.util.List;
 import java.util.Scanner;
 
 public class Cliente {
-
-    /**
-     * Valida se a string contém apenas números e tem o tamanho correto.
-     * @param valor A string de entrada.
-     * @param TamMin Tamanho mínimo.
-     * @param TamMax Tamanho máximo.
-     * @return A string de números se for válida, ou null se for inválida.
-     */
     private static String validarNumero(String valor, int TamMin, int TamMax) {
         if (valor == null) return null;
         String valorLimpo = valor.replaceAll("[^0-9]", "");
@@ -25,12 +17,6 @@ public class Cliente {
         return null;
     }
 
-    /**
-     * VERIFICAÇÃO DE CPF/TELEFONE DUPLICADO (Corrigido)
-     * @param valor O CPF ou Telefone
-     * @param tipo A coluna ("cpf" ou "telefone")
-     * @return true se for válido (único), false se já existir
-     */
     private static boolean validarUnico(String valor, String tipo) {
         // Query segura (usa PreparedStatement)
         String sql = "SELECT 1 FROM clientes WHERE " + tipo + " = ?";
@@ -153,10 +139,7 @@ public class Cliente {
         }
     }
 
-    // =================================================================
-    // MÉTODO 'inserirCliente' CORRIGIDO
-    // Esta é a nova assinatura que o Login.java espera: (Scanner sc)
-    // =================================================================
+
     public static void inserirCliente(Scanner sc) {
         System.out.println("\n=== CRIAR NOVA CONTA DE CLIENTE (Passo-a-passo) ===");
 
@@ -264,16 +247,6 @@ public class Cliente {
     }
 
 
-    /**
-     * Atualiza os dados de um cliente.
-     * @param sc Scanner
-     * @param usuarioId Se 0, pergunta o ID (ADM). Se > 0, usa o ID do usuário logado (Cliente).
-     */
-    // =================================================================
-    // MÉTODO 'atualizarCliente' CORRIGIDO
-    // 1. Assinatura corrigida para (Scanner, int)
-    // 2. Corrigido para usar PreparedStatement (evita SQL Injection)
-    // =================================================================
     public static void atualizarCliente(Scanner sc, int usuarioId) {
 
         try (Connection con = Conexao.getConnection()) {
@@ -407,14 +380,6 @@ public class Cliente {
         }
     }
 
-    /**
-     * Desativa um cliente (Soft Delete) ao desativar o usuário associado.
-     */
-    // =================================================================
-    // MÉTODO 'deletarCliente' CORRIGIDO
-    // 1. Renomeado para 'desativarCliente'
-    // 2. Lógica mudada para "Soft Delete" (Atualiza usuarios.situacao)
-    // =================================================================
     private static void desativarCliente(Scanner sc) {
         try (Connection con = Conexao.getConnection()) {
 
@@ -471,6 +436,7 @@ public class Cliente {
             System.out.println("Erro ao desativar cliente: " + e.getMessage());
         }
     }
+
 
 
 }
