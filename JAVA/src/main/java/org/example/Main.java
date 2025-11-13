@@ -17,46 +17,32 @@ import Database.Conexao;
 import org.example.Login;
 
 public class Main {
-
-    /**
-     * MÉTODO 1: Ponto de entrada principal do aplicativo.
-     * Controla o loop de login.
-     */
     public static void main(String[] args) {
         Login l = new Login();
 
-        // Loop principal do aplicativo
         while (true) {
 
-            if (l.logar()) { // Chama a tela de Login/Cadastro
-                // Se o login for bem-sucedido...
+            if (l.logar()) {
                 String grupo = l.getGrupo();
                 String usuario = l.getUsuario();
                 int usuarioId = l.getId();
-
-                // Busca o ID do perfil (cliente_id ou farmacia_id)
                 int perfilId = getPerfilId(grupo, usuarioId);
 
                 System.out.println("Bem vindo ao Sistema, " + usuario + "\n============================");
-
-                // Mostra o menu principal (do adm, cliente ou farmacia)
                 mostrarMenu(grupo, usuarioId, perfilId);
 
-                // Quando 'mostrarMenu' terminar (usuário fez logout), o loop 'while(true)'
-                // recomeça, voltando para a tela de login (l.logar()).
-
             } else {
-                // Se l.logar() retornar false (usuário escolheu "4. Sair" no login)
                 System.out.println("Encerrando FarmaShop. Volte sempre!");
-                break; // Quebra o loop principal e encerra o app.
+                break;
             }
         }
-    } // --- FIM do método main ---
-
+    }
 
     /**
-     * MÉTODO 2: Busca o ID do perfil (cliente ou farmácia)
-     * com base no ID do usuário logado.
+     * Busca o ID da tabela 'clientes' ou 'farmacias' com base no usuario_id.
+     * @param grupo O grupo do usuário ("cliente" ou "farmacia")
+     * @param usuarioId O ID da tabela 'usuarios'
+     * @return O ID do perfil (cliente_id ou farmacia_id), ou 0 se for ADM ou não encontrado.
      */
     public static int getPerfilId(String grupo, int usuarioId) {
         String sql;
@@ -78,26 +64,27 @@ public class Main {
             if (rs.next()) {
                 id = rs.getInt("id");
             } else  {
-                // System.out.println("Aviso: Usuário logado mas sem perfil (cliente/farmácia) associado.");
+                // Não é um erro, ADM não tem perfil, e novos usuários podem não ter
             }
 
         } catch (SQLException e) {
             System.out.println("Erro crítico ao buscar perfil: " + e.getMessage());
         }
         return id;
-    } // --- FIM do método getPerfilId ---
-
+    }
 
     /**
-     * MÉTODO 3: Exibe o menu principal (ADM, Cliente ou Farmácia)
-     * após o login ser bem-sucedido.
+     * Exibe o menu principal com base no perfil do usuário.
+     * @param grupo O nome do grupo ("adm", "cliente", "farmacia")
+     * @param usuarioId O ID da tabela 'usuarios' (para atualizar dados de usuário)
+     * @param perfilId O ID da tabela 'clientes' ou 'farmacias' (para ações de perfil)
      */
     public static void mostrarMenu(String grupo, int usuarioId, int perfilId){
         Scanner sc = new Scanner(System.in);
         int opcao = 0;
 
         if (grupo.equals("adm")){
-            // Loop do ADM. Termina quando 'opcao' for 6
+            // Loop do ADM.
             while(opcao != 6){
                 System.out.println("\nMENU ADMINISTRADOR:");
                 System.out.println("Escolha uma das opções: ");
@@ -106,7 +93,7 @@ public class Main {
                 System.out.println("3. Gerenciar Farmácias");
                 System.out.println("4. Gerenciar Endereços");
                 System.out.println("5. Gerenciar Produtos (Visão ADM)");
-                System.out.println("6. Sair (Voltar à tela inicial)"); // "Sair"
+                System.out.println("6. Sair (Voltar à tela inicial)");
 
                 try {
                     opcao = Integer.parseInt(sc.nextLine());
@@ -127,25 +114,26 @@ public class Main {
                         Endereco.exibirEnderecos("adm");
                         break;
                     case 5:
-                        Produtos.exibirProdutos(sc, grupo, 0); // ADM passa 0 como perfilId
+                        Produtos.exibirProdutos(sc, grupo, 0);
                         break;
                     case 6:
                         System.out.println("Fazendo logout...");
-                        break; // Quebra o 'while(opcao != 6)' e retorna ao Main
+                        break;
                     default:
                         System.out.println("Opção inválida.");
                 }
             }
         } else if (grupo.equals("cliente")) {
-            // Loop do Cliente. Termina quando 'opcao' for 5
-            while (opcao != 5) {
+            // Loop do Cliente.
+            while (opcao != 6) {
                 System.out.println("\nMENU CLIENTE:");
                 System.out.println("Escolha uma das opções: ");
                 System.out.println("1. Atualizar dados Pessoais");
                 System.out.println("2. Atualizar meu Endereço");
-                System.out.println("3. Ver Produtos (e Favoritos)");
-                System.out.println("4. Gerenciar Formas de Pagamento");
-                System.out.println("5. Sair (Voltar à tela inicial)");
+                System.out.println("3. Ver Produtos (e Adicionar)");
+                System.out.println("4. Ver Meu Carrinho");
+                System.out.println("5. Gerenciar Formas de Pagamento");
+                System.out.println("6. Sair (Voltar à tela inicial)");
 
                 try {
                     opcao = Integer.parseInt(sc.nextLine());
@@ -153,8 +141,7 @@ public class Main {
 
                 switch (opcao) {
                     case 1:
-                        // CORREÇÃO: Passando (sc, usuarioId)
-                        Cliente.atualizarCliente(sc, usuarioId);
+                        Cliente.atualizarCliente(sc, usuarioId); // Passa o ID do usuário
                         break;
                     case 2:
                         Endereco.atualizarEndereco(usuarioId);
@@ -163,24 +150,27 @@ public class Main {
                         Produtos.exibirProdutos(sc, grupo, perfilId);
                         break;
                     case 4:
-                        FormaPagamento.gerenciarFormasPagamento(sc, perfilId);
+                        Produtos.exibirCarrinho(sc, perfilId); // Chama o novo método
                         break;
                     case 5:
+                        FormaPagamento.gerenciarFormasPagamento(sc, perfilId);
+                        break;
+                    case 6:
                         System.out.println("Fazendo logout...");
-                        break; // Quebra o 'while' e retorna ao Main
+                        break;
                     default:
                         System.out.println("Escolha uma opção válida");
                 }
             }
         } else if (grupo.equals("farmacia")) {
-            // Loop da Farmácia. Termina quando 'opcao' for 4
+            // Loop da Farmácia.
             while (opcao != 4) {
                 System.out.println("\nMENU FARMÁCIA:");
                 System.out.println("Escolha uma das opções: ");
                 System.out.println("1. Gerenciar Meus Produtos");
                 System.out.println("2. Atualizar dados da Farmácia");
                 System.out.println("3. Atualizar Endereço da Farmácia");
-                System.out.println("4. Sair (Voltar à tela inicial)"); // "Sair"
+                System.out.println("4. Sair (Voltar à tela inicial)");
 
                 try {
                     opcao = Integer.parseInt(sc.nextLine());
@@ -190,20 +180,23 @@ public class Main {
                     case 1:
                         Produtos.exibirProdutos(sc, grupo, perfilId);
                         break;
+                    // =================================================================
+                    // CORREÇÃO AQUI
+                    // Passa o 'perfilId', que é o ID da farmácia logada.
+                    // =================================================================
                     case 2:
-                        Farmacia.atualizarFarmacia(sc);
+                        Farmacia.atualizarFarmacia(sc, perfilId);
                         break;
                     case 3:
                         Endereco.atualizarEndereco(usuarioId);
                         break;
                     case 4:
                         System.out.println("Fazendo logout...");
-                        break; // Quebra o 'while(opcao != 4)' e retorna ao Main
+                        break;
                     default:
-                        System.out.println("Opção inválida");
+                        System.out.println("Escolha uma opção válida");
                 }
             }
         }
     }
-
 }

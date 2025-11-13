@@ -27,8 +27,6 @@ public class Login {
     }
 
     public boolean logar() {
-        // Removidas as instâncias desnecessárias (u, e, f, c)
-        // Elas agora são instanciadas dentro dos métodos de "Fluxo Corrigido"
         int opcao;
         boolean logado = false;
         Scanner sc = new Scanner(System.in);
@@ -48,19 +46,12 @@ public class Login {
                     logado = realizarLogin(sc);
                     break;
                 case 2:
-                    // =================================================================
-                    // CORREÇÃO AQUI
-                    // Chamamos o "Fluxo Corrigido" do Cliente.
-                    // O método inserirCliente agora cuida de criar o usuário e o endereço.
-                    // =================================================================
+                    // Chama o "Fluxo Corrigido" do Cliente.
                     Cliente.inserirCliente(sc);
                     // (O programa voltará ao menu de login após o cadastro)
                     break;
                 case 3:
-                    // =================================================================
-                    // CORRETO (Como você já tinha)
-                    // Chamamos o "Fluxo Corrigido" da Farmácia.
-                    // =================================================================
+                    // Chama o "Fluxo Corrigido" da Farmácia.
                     Farmacia.inserirFarmacia(sc);
                     // (O programa voltará ao menu de login após o cadastro)
                     break;

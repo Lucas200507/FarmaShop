@@ -91,7 +91,8 @@ public class Farmacia {
                 inserirFarmacia(sc);
                 break;
             case 2:
-                atualizarFarmacia(sc);
+                // Se é o ADM, ele passa 0, forçando o método a perguntar o ID.
+                atualizarFarmacia(sc, 0);
                 break;
             case 3:
                 desativarFarmacia(sc); // Soft delete
@@ -103,7 +104,7 @@ public class Farmacia {
                 System.out.println("Opção inválida");
                 break;
         }
-    } // <-- Chave '}' que faltava (fim do método exibirFarmacias)
+    }
 
     /**
      * Processo de inserir uma nova farmácia (NOVO FLUXO CORRIGIDO).
@@ -168,6 +169,7 @@ public class Farmacia {
                 System.out.println("Digite o CNPJ (14 dígitos): ");
                 cnpjValidado = validarNumero(sc.nextLine(), 14, 14);
                 if (cnpjValidado == null) System.out.println("CNPJ inválido. Digite 14 números.");
+                // (Opcional: adicionar validação de CNPJ duplicado)
             } while (cnpjValidado == null);
 
             String alvara;
@@ -196,6 +198,7 @@ public class Farmacia {
                 System.out.println("Digite o telefone (10 ou 11 dígitos):");
                 telefoneValidado = validarNumero(sc.nextLine(), 10, 11);
                 if (telefoneValidado == null) System.out.println("Telefone inválido (DDD + Número).");
+                // (Opcional: adicionar validação de telefone duplicado)
             } while (telefoneValidado == null);
 
             String sql = "INSERT INTO farmacias (nome_juridico, nome_fantasia, cnpj, alvara_sanitario, responsavel_tecnico, crf, telefone, endereco_id, usuario_id) " +
@@ -217,43 +220,54 @@ public class Farmacia {
                 System.out.println("FARMÁCIA CADASTRADA COM SUCESSO!");
                 System.out.println("==============================================");
             }
-        } catch (SQLException ex) { // <-- Variável 'e' renomeada para 'ex'
+        } catch (SQLException ex) {
             System.out.println("ERRO CRÍTICO ao inserir farmácia: " + ex.getMessage());
             // (Opcional: deletar o usuário e endereço criados)
         }
     }
 
     /**
-     * Atualiza uma farmácia. Agora é PÚBLICO para ser chamado pelo Main.
+     * Atualiza uma farmácia.
+     * @param sc Scanner
+     * @param farmaciaIdLogada O ID da farmácia logada (do perfilId).
+     * Se for 0, o método entende que é o ADM
+     * e PERGUNTA qual ID deve ser atualizado.
      */
-    public static void atualizarFarmacia(Scanner sc) {
-        int id = 0; // Inicializa o ID
+    public static void atualizarFarmacia(Scanner sc, int farmaciaIdLogada) {
+        // Inicializa a variável para 0
+        int idParaAtualizar = 0;
 
         try (Connection con = Conexao.getConnection()) {
 
-            // --- Validação de ID (NumberFormatException) ---
-            boolean idValido = false;
-            do {
-                System.out.println("Digite o ID da farmácia que deseja atualizar: ");
-                String idInput = sc.nextLine();
-
-                try {
-                    id = Integer.parseInt(idInput); // Tenta converter
-                    if (id > 0) {
-                        idValido = true; // Sucesso!
-                    } else {
-                        System.out.println("ERRO: O ID deve ser um número positivo.");
+            if (farmaciaIdLogada == 0) {
+                // --- FLUXO DO ADM ---
+                // Se o ID é 0, é o ADM. Precisamos perguntar o ID.
+                boolean idValido = false;
+                do {
+                    System.out.println("Digite o ID da farmácia que deseja atualizar (Visão ADM): ");
+                    String idInput = sc.nextLine();
+                    try {
+                        idParaAtualizar = Integer.parseInt(idInput); // Tenta converter
+                        if (idParaAtualizar > 0) {
+                            idValido = true; // Sucesso!
+                        } else {
+                            System.out.println("ERRO: O ID deve ser um número positivo.");
+                        }
+                    } catch (NumberFormatException e) {
+                        System.out.println("ERRO: Entrada inválida. Digite apenas números.");
                     }
-                } catch (NumberFormatException e) {
-                    // Se o 'parseInt' falhar (ex: string vazia "" ou "abc")
-                    System.out.println("ERRO: Entrada inválida. Digite apenas números.");
-                }
-            } while (!idValido);
-            // --- FIM DA Validação ---
+                } while (!idValido);
+            } else {
+                // --- FLUXO DA FARMÁCIA LOGADA ---
+                // O ID já foi fornecido, pula a pergunta.
+                idParaAtualizar = farmaciaIdLogada;
+                System.out.println("Atualizando dados da sua farmácia (ID: " + idParaAtualizar + ")");
+            }
+
 
             String sel = "SELECT * FROM farmacias WHERE id = ?";
             try (PreparedStatement selStmt = con.prepareStatement(sel)) {
-                selStmt.setInt(1, id); // 'id' agora é garantido como um int válido
+                selStmt.setInt(1, idParaAtualizar); // Usa o ID (perguntado ou do login)
                 ResultSet rs = selStmt.executeQuery();
                 if (!rs.next()) {
                     System.out.println("Farmácia não encontrada.");
@@ -268,7 +282,6 @@ public class Farmacia {
                 String responsavelAtual = rs.getString("responsavel_tecnico");
                 String crfAtual = rs.getString("crf");
                 String telefoneAtual = rs.getString("telefone");
-                // CORRIGIDO: endereco_id é String (VARCHAR(7))
                 String enderecoAtual = rs.getString("endereco_id");
 
                 // --- Coleta de Novos Dados (com validação e skip "Enter") ---
@@ -297,6 +310,7 @@ public class Farmacia {
                     if (cnpjDigitado.isEmpty()) { cnpj = ""; break; } // Permite pular
                     cnpj = validarNumero(cnpjDigitado, 14, 14);
                     if (cnpj == null) System.out.println("CNPJ inválido (14 números).");
+                    // (Opcional: validar unicidade se cnpj != cnpjAtual)
                 } while (cnpj == null);
 
                 String alvara;
@@ -333,9 +347,9 @@ public class Farmacia {
                     if (telDigitado.isEmpty()) { telefone = ""; break; } // Permite pular
                     telefone = validarNumero(telDigitado, 10, 11);
                     if (telefone == null) System.out.println("Telefone inválido (10 ou 11 números).");
+                    // (Opcional: validar unicidade se telefone != telefoneAtual)
                 } while (telefone == null);
 
-                // CORRIGIDO: endereco_id é String
                 System.out.println("Digite novo endereco_id (ou Enter para manter: " + enderecoAtual + "):");
                 String enderecoId = sc.nextLine();
                 // (Opcional: validar se o novo ID de endereço existe na tabela 'enderecos')
@@ -360,12 +374,11 @@ public class Farmacia {
                 }
 
                 sql.append(" WHERE id = ?");
-                params.add(id); // Adiciona o 'id' (INT) no final
+                params.add(idParaAtualizar); // Adiciona o 'id' (INT) no final
 
                 try (PreparedStatement upd = con.prepareStatement(sql.toString())) {
                     for (int i = 0; i < params.size(); i++) {
                         Object p = params.get(i);
-                        // O 'id' (último) é Int, 'enderecoId' (se houver) é String
                         if (p instanceof Integer) {
                             upd.setInt(i + 1, (Integer) p);
                         } else {
@@ -383,7 +396,6 @@ public class Farmacia {
 
     /**
      * Desativa uma farmácia (Soft Delete) ao desativar o usuário associado.
-     * Agora é PÚBLICO para ser chamado pelo Main.
      */
     public static void desativarFarmacia(Scanner sc) {
         try (Connection con = Conexao.getConnection()) {
