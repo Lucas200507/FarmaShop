@@ -1,38 +1,41 @@
-
-[README.pdf](https://github.com/user-attachments/files/22583121/README.pdf)
-Como rodar o programa:
-- Baixar os arquivos do main
+# Como rodar o programa:
+- Baixar os arquivos do main<br>
 - Rodar o schema do banco de dados no mysql
-  
-Fluxo do programa:
+## Conectar ao Banco: 
+- No intelliJ, vá em File > Project Structure > Modules > Add '+' > Jar or Diretories > Selecione o arquivo  mysql-connector-j-9.5.0, a qual estará em FarmaShop > Java > lib.<br>
+- Em Database Conexao, altere as variáveis, url, user e pss:<br>
+  EX: <br>
+  private static final String url = "jdbc:mysql://HOST:PORT/FarmaShop";<br>
+    private static final String user = "USER";<br>
+    private static final String pss = "SENHA";<br><br>
+# Fluxo do programa:
 O programa se inicia com a tela de login, onde temos a opção de sair do programa, cadastrar farmácia, cliente ou realizar login:
+<br>
+## LOGIN
+Digite:<br>
+ 1.Realizar Login<br>
+ 2.Criar uma conta Cliente<br>
+ 3.Criar uma conta Farmácia<br>
+ 4.Sair<br>
 
-=== LOGIN ===
-Digite:
- 1.Realizar Login
- 2.Criar uma conta Cliente
- 3.Criar uma conta Farmácia
- 4.Sair
+UTLIZE ESSES USUÁRIOS PARA TESTE:<br>  usuário: cliente@ | senha: 123<br>usuário: farmacia@ | senha: 123<br>usuário: adm@ | senha: 321
 
-Após o cadastro feito, temos opções e retições diferentes para cada tipo de usuário.
-Para o usuário cliente: 
-MENU CLIENTE:
-Escolha uma das opções: 
-1. Atualizar dados Pessoais
-2. Atualizar meu Endereço
-3. Ver Produtos (e Carrinho/Favoritos)
-4. Gerenciar Formas de Pagamento
-5. Sair (Voltar à tela inicial)
+## CLIENTE:
+Escolha uma das opções: <br>
+1. Atualizar dados Pessoais<br>
+2. Atualizar meu Endereço<br>
+3. Ver Produtos (e Carrinho/Favoritos)<br>
+4. Gerenciar Formas de Pagamento<br>
+5. Sair (Voltar à tela inicial)<br>
    
-Para o usuário farmácia:
-MENU FARMÁCIA:
-Escolha uma das opções: 
-1. Gerenciar Meus Produtos
-2. Atualizar dados da Farmácia
-3. Atualizar Endereço da Farmácia
-4. Sair (Voltar à tela inicial)
+## FARMÁCIA:
+Escolha uma das opções: <br>
+1. Gerenciar Meus Produtos<br>
+2. Atualizar dados da Farmácia<br>
+3. Atualizar Endereço da Farmácia<br>
+4. Sair (Voltar à tela inicial)<br>
 
-Para o ADM: 
+ADM: 
 Como acessar o ADM:
 (Email (Usuário): adm@
 Senha: 321)
@@ -45,3 +48,5 @@ Escolha uma das opções:
 4. Gerenciar Endereços
 5. Gerenciar Produtos (Visão ADM)
 6. Sair (Voltar à tela inicial)
+
+[README.pdf](https://github.com/user-attachments/files/22583121/README.pdf)
