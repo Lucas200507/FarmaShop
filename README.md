@@ -1,5 +1,5 @@
 # Como rodar o programa:
-- Baixar os arquivos do main<br>
+- Baixar os arquivos do main JAVA, favor, ignorar os outros arquivos fora deste diretório<br>
 - Rodar o schema do banco de dados no mysql
 ## Conectar ao Banco: 
 - No intelliJ, vá em File > Project Structure > Modules > Add '+' > Jar or Diretories > Selecione o arquivo  mysql-connector-j-9.5.0, a qual estará em FarmaShop > Java > lib.<br>
