@@ -10,8 +10,48 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Scanner;
+import java.sql.Statement;
 
 public class Endereco {
+
+
+    /**
+     * Busca o ID do endereço (VARCHAR(7)) associado a um ID de usuário.
+     * Ele procura primeiro em clientes, depois em farmácias.
+     * @param con Conexão com o banco
+     * @param idUsuario O ID da tabela 'usuarios'
+     * @return O ID do endereço (ex: "a1b2c3d") ou null se não encontrar.
+     * @throws SQLException
+     */
+    private static String findEnderecoIdFromUsuario(Connection con, int idUsuario) throws SQLException {
+        String enderecoId = null;
+
+        // 1. Procura na tabela CLIENTES
+        String sqlCliente = "SELECT endereco_id FROM clientes WHERE usuario_id = ?";
+        try (PreparedStatement stmt = con.prepareStatement(sqlCliente)) {
+            stmt.setInt(1, idUsuario);
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                enderecoId = rs.getString("endereco_id");
+            }
+        }
+
+        // 2. Se não achou, procura na tabela FARMACIAS
+        if (enderecoId == null) {
+            String sqlFarmacia = "SELECT endereco_id FROM farmacias WHERE usuario_id = ?";
+            try (PreparedStatement stmt = con.prepareStatement(sqlFarmacia)) {
+                stmt.setInt(1, idUsuario);
+                ResultSet rs = stmt.executeQuery();
+                if (rs.next()) {
+                    enderecoId = rs.getString("endereco_id");
+                }
+            }
+        }
+
+        return enderecoId; // Retorna o ID (ou null se não achou em nenhuma)
+    }
+
+
     public static void exibirEnderecos(String tipo){
         System.out.println("=== ENDEREÇOS ===");
         Scanner sc = new Scanner(System.in);
@@ -30,7 +70,7 @@ public class Endereco {
                 System.out.println("Complemento: "+rs.getString("complemento"));
                 System.out.println("====================================================");
             }
-            if (tipo == "adm"){
+            if (tipo != null && tipo.equals("adm")){ // <-- Corrigido (null check)
                 System.out.println("\nDigite a opção que preferir:");
                 System.out.println("1. Inserir novo endereço");
                 System.out.println("2. Atualizar endereço");
@@ -39,30 +79,29 @@ public class Endereco {
                 int opcao = sc.nextInt();
                 sc.nextLine();
                 Endereco e = new Endereco();
-                do {
-                    switch (opcao) {
-                        case 1:
-                            String idEndereco = e.inserirEndereco(sc);
-                            break;
-                        case 2:
-                            atualizarEndereco(0);
-                            break;
-                        case 3:
-                            deletarEndereco(0);
-                            break;
-                        case 4:
-                            System.out.println("Saindo...");
-                            break;
-                        default:
-                            System.out.println("Opção inválida");
-                            break;
-                    }
-                } while (opcao!=1&&opcao!=2&&opcao!=3&&opcao!=4);
+                // (O loop 'do-while' foi removido, pois o menu já está em loop no Main.java)
+                switch (opcao) {
+                    case 1:
+                        String idEndereco = e.inserirEndereco(sc);
+                        break;
+                    case 2:
+                        atualizarEndereco(0); // 0 significa que é um ADM
+                        break;
+                    case 3:
+                        deletarEndereco(0); // 0 significa que é um ADM
+                        break;
+                    case 4:
+                        System.out.println("Saindo...");
+                        break;
+                    default:
+                        System.out.println("Opção inválida");
+                        break;
+                }
             }
 
-            con.close();
-            stmt.close();
-            rs.close();
+            // (As chamadas rs.close(), stmt.close(), con.close() são desnecessárias
+            //  dentro de um try-with-resources)
+
         } catch (SQLException e) {
             System.out.println("Erro em exibir Endereços: " + e.getMessage());
         }
@@ -73,18 +112,18 @@ public class Endereco {
         try (Connection con = Conexao.getConnection()) {
             // CEP
             String cep = "";
-            while (!cep.matches("^\\d+$") || cep.length() != 8) {
+            while (true) { // Loop infinito até que seja válido ou vazio
                 System.out.println("Digite um CEP (somente números, 8 dígitos): ");
                 cep = sc.nextLine().trim();
-                if (cep.length() != 8 || !cep.matches("^\\d+$")) {
-                    System.out.println("Você deve digitar 8 caracteres numéricos.");
+                if (cep.length() == 8 && cep.matches("^\\d+$")) {
+                    break; // Válido
+                } else {
+                    System.out.println("CEP inválido. Você deve digitar 8 caracteres numéricos.");
                 }
             }
 
             // Formata CEP com hífen
-            StringBuilder sb = new StringBuilder(cep);
-            sb.insert(5, "-");
-            String rcep = sb.toString();
+            String rcep = cep.substring(0, 5) + "-" + cep.substring(5);
 
             // Estado
             String[] estados = {
@@ -92,12 +131,15 @@ public class Endereco {
                     "MA", "MT", "MS", "MG", "PA", "PB", "PR", "PE", "PI",
                     "RJ", "RN", "RS", "RO", "RR", "SC", "SP", "SE", "TO"
             };
+            List<String> listaEstados = Arrays.asList(estados);
             String estado = "";
-            while (!Arrays.asList(estados).contains(estado)) {
+            while (true) {
                 System.out.println("Digite a sigla do estado (ex: SP, GO, AC): ");
                 estado = sc.nextLine().trim().toUpperCase();
-                if (!Arrays.asList(estados).contains(estado)) {
-                    System.out.println("Opção inválida!");
+                if (listaEstados.contains(estado)) {
+                    break; // Válido
+                } else {
+                    System.out.println("Sigla de estado inválida!");
                 }
             }
 
@@ -112,24 +154,23 @@ public class Endereco {
             // Número (opcional e apenas positivo)
             int numero = 0;
             while (true) {
-                System.out.println("Digite o número do endereço (não obrigatório): ");
+                System.out.println("Digite o número do endereço (ou Enter para pular): ");
                 String n = sc.nextLine().trim();
 
                 if (n.isEmpty()) {
                     break; // opcional, sai do loop
                 }
 
-                if (!n.matches("^\\d+$")) {
+                try {
+                    numero = Integer.parseInt(n);
+                    if (numero > 0) {
+                        break; // Válido
+                    } else {
+                        System.out.println("O número deve ser maior que zero.");
+                    }
+                } catch (NumberFormatException e) {
                     System.out.println("Digite apenas números positivos ou deixe em branco.");
-                    continue;
                 }
-
-                numero = Integer.parseInt(n);
-                if (numero <= 0) {
-                    System.out.println("O número deve ser maior que zero.");
-                    continue;
-                }
-                break; // válido
             }
 
             // Bairro
@@ -141,20 +182,29 @@ public class Endereco {
             String complemento = sc.nextLine().trim();
 
             // Inserção no banco
+            // (O ID é gerado pela Trigger 'trg_gerar_idEndereco')
             String sql = "INSERT INTO enderecos (cep, estado, cidade, rua, numero, bairro, complemento) VALUES (?,?,?,?,?,?,?)";
-            PreparedStatement stmt = con.prepareStatement(sql);
-            stmt.setString(1, rcep);
-            stmt.setString(2, estado);
-            stmt.setString(3, cidade);
-            stmt.setString(4, rua);
-            stmt.setInt(5, numero);
-            stmt.setString(6, bairro);
-            stmt.setString(7, complemento);
-            stmt.executeUpdate();
-            stmt.close();
+            try (PreparedStatement stmt = con.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+                stmt.setString(1, rcep);
+                stmt.setString(2, estado);
+                stmt.setString(3, cidade);
+                stmt.setString(4, rua);
+
+                if(numero == 0) {
+                    stmt.setNull(5, java.sql.Types.INTEGER);
+                } else {
+                    stmt.setInt(5, numero);
+                }
+
+                stmt.setString(6, bairro);
+                stmt.setString(7, complemento);
+                stmt.executeUpdate();
+            }
 
             System.out.println("Endereço criado com sucesso!");
-            String sql2 = "SELECT id FROM enderecos WHERE cep = ?";
+
+            // Busca o ID do endereço que acabou de ser criado
+            String sql2 = "SELECT id FROM enderecos WHERE cep = ? ORDER BY id DESC LIMIT 1";
             try(PreparedStatement stmt2 = con.prepareStatement(sql2)){
                 stmt2.setString(1, rcep);
                 ResultSet rs = stmt2.executeQuery();
@@ -170,21 +220,26 @@ public class Endereco {
 
     public static void atualizarEndereco(int idUsuario) {
         Scanner sc = new Scanner(System.in);
-        String sel = "", id = "";
+        String id = "";
         try (Connection con = Conexao.getConnection()) {
-            if (idUsuario != 0) {
-                String sql5 = "SELECT endereco_id FROM usuarios WHERE id = ?";
-                PreparedStatement stmt5 = con.prepareStatement(sql5);
-                stmt5.setInt(1, idUsuario);
-                ResultSet rs5 = stmt5.executeQuery();
-                if (rs5.next()) {
-                    id = rs5.getString("endereco_id");
+
+            // =================================================================
+            // CORREÇÃO: Buscar o endereco_id (String) nas tabelas filhas
+            // =================================================================
+            if (idUsuario != 0) { // Se for Cliente ou Farmácia
+                id = findEnderecoIdFromUsuario(con, idUsuario);
+                if (id == null) {
+                    System.out.println("Erro: Nenhum endereço encontrado para este usuário.");
+                    return;
                 }
-            } else {
+                System.out.println("Editando endereço (ID: " + id + ") vinculado ao seu usuário.");
+            } else { // Se for ADM
                 System.out.println("Digite o ID do endereço que deseja atualizar: ");
                 id = sc.nextLine();
             }
-            sel = "SELECT * FROM enderecos WHERE id = ?";
+            // =================================================================
+
+            String sel = "SELECT * FROM enderecos WHERE id = ?";
             try (PreparedStatement selStmt = con.prepareStatement(sel)) {
                 selStmt.setString(1, id);
                 ResultSet rs = selStmt.executeQuery();
@@ -194,6 +249,7 @@ public class Endereco {
                     return;
                 }
 
+                // ... (lógica de buscar dados atuais e pedir novos - seu código original) ...
                 String estadoAtual = rs.getString("estado");
                 String cidadeAtual = rs.getString("cidade");
                 String ruaAtual = rs.getString("rua");
@@ -215,7 +271,7 @@ public class Endereco {
                     cep = cepDigitado.substring(0, 5) + "-" + cepDigitado.substring(5);
                 }
 
-                // Estado
+                // ... (Lógica de Estado, Cidade, Rua, etc. - seu código original) ...
                 String[] estados = {
                         "AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO",
                         "MA", "MT", "MS", "MG", "PA", "PB", "PR", "PE", "PI",
@@ -239,13 +295,14 @@ public class Endereco {
 
                 System.out.println("Digite o novo número (ou Enter para manter: " + numeroAtual + "): ");
                 String numeroStr = sc.nextLine().trim();
-                Integer numero = numeroStr.isEmpty() ? null : Integer.parseInt(numeroStr);
+                Integer numero = numeroStr.isEmpty() ? null : Integer.parseInt(numeroStr); // Null se vazio
 
                 System.out.println("Digite o novo bairro (ou Enter para manter: " + bairroAtual + "): ");
                 String bairro = sc.nextLine().trim();
 
                 System.out.println("Digite o novo complemento (ou Enter para manter: " + complementoAtual + "): ");
                 String complemento = sc.nextLine().trim();
+
 
                 // Montagem dinâmica do SQL
                 StringBuilder sql = new StringBuilder("UPDATE enderecos SET ");
@@ -280,6 +337,8 @@ public class Endereco {
 
             } catch (SQLException e) {
                 System.out.println("Erro ao buscar endereço: " + e.getMessage());
+            } catch (NumberFormatException e) {
+                System.out.println("ERRO: O número do endereço deve ser um valor numérico.");
             }
 
         } catch (SQLException e) {
@@ -287,63 +346,77 @@ public class Endereco {
         }
     }
 
-    private static void deletarEndereco(int idUsuario) throws SQLException {
+    private static void deletarEndereco(int idUsuario) {
         Scanner  sc = new Scanner(System.in);
-        boolean erro = true, cancelado = false, deletado = false;
         String id = "";
-        do {
-            if (idUsuario == 0) {
-                System.out.println("Digite o id do Endereço que deseja deletar: ");
+
+        try (Connection con = Conexao.getConnection()) {
+
+            // =================================================================
+            // CORREÇÃO: Buscar o endereco_id (String) nas tabelas filhas
+            // =================================================================
+            if (idUsuario != 0) { // Se for Cliente ou Farmácia
+                id = findEnderecoIdFromUsuario(con, idUsuario);
+                if (id == null) {
+                    System.out.println("Erro: Nenhum endereço encontrado para este usuário.");
+                    return;
+                }
+                System.out.println("AVISO: Esta ação irá deletar o endereço (ID: " + id + ") do banco.");
+                System.out.println("O seu perfil (cliente/farmácia) ficará SEM endereço associado.");
+            } else { // Se for ADM
+                System.out.println("Digite o ID do Endereço que deseja deletar: ");
                 id = sc.nextLine();
+            }
+            // =================================================================
+
+            PreparedStatement stmtCheck = con.prepareStatement("SELECT * FROM enderecos WHERE id = ?");
+            stmtCheck.setString(1, id);
+            ResultSet rsCheck = stmtCheck.executeQuery();
+
+            if (!rsCheck.next()) {
+                System.out.println("Endereço não encontrado, ID: " + id);
+                return;
+            }
+
+            System.out.println("Tem certeza que deseja DELETAR o endereço ID: "+id+" ? (S/N)");
+            String op = sc.nextLine().toUpperCase();
+
+            if (op.equals("S")) {
+
+                // 1. ANTES de deletar o endereço, precisamos desvincular
+                //    o endereço das tabelas 'clientes' e 'farmacias'
+                //    (Seu SQL não usa ON DELETE SET NULL, então fazemos manualmente)
+
+                String sqlUnlinkC = "UPDATE clientes SET endereco_id = NULL WHERE endereco_id = ?";
+                try (PreparedStatement stmt = con.prepareStatement(sqlUnlinkC)) {
+                    stmt.setString(1, id);
+                    stmt.executeUpdate(); // Desvincula de clientes
+                }
+
+                String sqlUnlinkF = "UPDATE farmacias SET endereco_id = NULL WHERE endereco_id = ?";
+                try (PreparedStatement stmt = con.prepareStatement(sqlUnlinkF)) {
+                    stmt.setString(1, id);
+                    stmt.executeUpdate(); // Desvincula de farmácias
+                }
+
+                // 2. Agora sim, deletamos o endereço
+                String sqlDelete = "DELETE FROM enderecos WHERE id = ?";
+                try(PreparedStatement stmt3 = con.prepareStatement(sqlDelete)) {
+                    stmt3.setString(1, id);
+                    int rows = stmt3.executeUpdate();
+                    if (rows > 0) {
+                        System.out.println("Endereço id = "+id+" Deletado com sucesso!!");
+                    } else {
+                        System.out.println("Erro: Endereço não foi deletado.");
+                    }
+                }
             } else {
-                String sql = "SELECT endereco_id FROM usuarios WHERE id = ?";
-                try {
-                    Connection con = Conexao.getConnection();
-                    PreparedStatement stmt = con.prepareStatement(sql);
-                    stmt.setInt(1, idUsuario);
-                    ResultSet rs = stmt.executeQuery();
-                    if (rs.next()) {
-                        id = rs.getString("endereco_id");
-                        erro = false;
-                    } else {
-                        System.out.println("Endereço não encontrado.");
-                    }
-                } catch (SQLException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-            try{
-                Connection con = Conexao.getConnection();
-                PreparedStatement stmt2 = con.prepareStatement("SELECT * FROM enderecos WHERE id = ?");
-                stmt2.setString(1, id);
-                ResultSet rs2 = stmt2.executeQuery();
-                if (rs2.next()) {
-                    System.out.println("Deseja deletar o endereço ? (S/N)");
-                    String op = sc.nextLine().toUpperCase();
-                    if (op.equals("S")) {
-                        PreparedStatement stmt3 = con.prepareStatement("DELETE FROM enderecos WHERE id = ?");
-                        stmt3.setString(1, id);
-                        ResultSet rs3 = stmt3.executeQuery();
-                        if (rs3.next()) {
-                            System.out.println("Endereço id = "+id+" Deletado com sucesso!!");
-                            deletado = true;
-                        } else {
-                            System.out.println("Erro em deletar endereço");
-                        }
-                    } else {
-                        System.out.println("Exclusão cancelada.");
-                        cancelado = true;
-                    }
-                } else {
-                    System.out.println("Endereço não encontrado, digite um id válido");
-                }
-            } catch (SQLException e) {
-                throw new RuntimeException(e);
+                System.out.println("Exclusão cancelada.");
             }
 
-
-        }  while (!erro || !deletado || cancelado);
-
+        } catch (SQLException e) {
+            System.out.println("Erro ao deletar endereço: " + e.getMessage());
+            System.out.println("Verifique se o ID está correto.");
+        }
     }
-
 }
