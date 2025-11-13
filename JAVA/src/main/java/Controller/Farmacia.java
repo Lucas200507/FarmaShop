@@ -73,7 +73,7 @@ public class Farmacia {
         }
 
         System.out.println("\nDigite a opção que preferir:");
-        System.out.println("1. Inserir nova farmácia (requer usuário e endereço pré-cadastrados)");
+        System.out.println("1. Inserir nova farmácia (Fluxo Completo)");
         System.out.println("2. Atualizar farmácia");
         System.out.println("3. Desativar farmácia (via usuário)");
         System.out.println("4. Sair da aba farmácias");
@@ -85,10 +85,10 @@ public class Farmacia {
             // Deixa 'opcao' como 0, o 'default' do switch tratará como inválido
         }
 
-        Farmacia f = new Farmacia();
         switch (opcao) {
             case 1:
-                int idFarmacia = f.inserirFarmacia(sc, 0, "0");
+                // Chama o novo fluxo de inserção
+                inserirFarmacia(sc);
                 break;
             case 2:
                 atualizarFarmacia(sc);
@@ -103,88 +103,50 @@ public class Farmacia {
                 System.out.println("Opção inválida");
                 break;
         }
-    }
+    } // <-- Chave '}' que faltava (fim do método exibirFarmacias)
 
     /**
-     * Processo de inserir uma nova farmácia.
+     * Processo de inserir uma nova farmácia (NOVO FLUXO CORRIGIDO).
+     * Guia o ADM na criação do Usuário, Endereço e Farmácia em um passo-a-passo.
      * @param sc Scanner
-     * @param idUsuario ID do usuário (se 0, pedirá ao usuário)
-     * @param idEndereco ID do endereço (se "0", pedirá ao usuário)
-     * @return O ID da nova farmácia criada
      */
-    public int inserirFarmacia(Scanner sc, int idUsuario, String idEndereco) {
-        int idFarmacia = 0;
+    public static void inserirFarmacia(Scanner sc) {
+        System.out.println("\n=== INSERIR NOVA FARMÁCIA (Passo-a-passo) ===");
 
-        // --- 1. Seleção de Usuário ---
-        if (idUsuario == 0) {
-            boolean valido = false;
-            System.out.println("--- Seleção de Usuário ---");
-            System.out.println("Listando usuários do tipo 'farmacia' disponíveis (que não estão em 'farmacias'):");
+        // Instâncias dos outros controllers para chamar seus métodos
+        Usuario u = new Usuario();
+        Endereco e = new Endereco();
 
-            // Query para achar usuários 'farmacia' (grupo_id = 3) que NÃO ESTÃO na tabela 'farmacias'
-            String sqlUsers = """
-                SELECT u.id, u.email FROM usuarios u 
-                JOIN usuarioGrupo ug ON u.id = ug.usuario_id 
-                WHERE ug.grupo_id = 3 AND u.situacao = 'ativo'
-                AND u.id NOT IN (SELECT f.usuario_id FROM farmacias f)
-            """;
+        int novoUsuarioId = 0;
+        String novoEnderecoId = "0";
 
-            try (Connection con = Conexao.getConnection(); PreparedStatement stmt = con.prepareStatement(sqlUsers)) {
-                ResultSet rs = stmt.executeQuery();
-                boolean userDisponivel = false;
-                while(rs.next()){
-                    userDisponivel = true;
-                    System.out.println("ID: " + rs.getInt("id") + " | Email: " + rs.getString("email"));
-                }
-                if (!userDisponivel){
-                    System.out.println("Nenhum usuário 'farmacia' disponível. Crie um usuário 'farmacia' primeiro.");
-                    return 0; // Aborta a inserção
-                }
-            } catch (SQLException e) {
-                System.out.println("Erro ao listar usuários: " + e.getMessage());
-                return 0;
-            }
+        // --- ETAPA 1: Criar o Usuário ---
+        System.out.println("--- Etapa 1: Dados de Login (Usuário) ---");
+        // Chama o 'inserirUsuario' do controller Usuario, forçando o grupo 3 (farmacia)
+        novoUsuarioId = u.inserirUsuario(sc, 3);
 
-            do{
-                System.out.println("Escolha um ID de usuário válido da lista acima:");
-                try {
-                    idUsuario = Integer.parseInt(sc.nextLine());
-                    // (Idealmente, verificar se o ID escolhido é válido e da lista)
-                    if (idUsuario > 0) valido = true;
-                } catch (NumberFormatException e) {
-                    System.out.println("Valor inválido! Não é um número inteiro.");
-                }
-            } while(!valido);
+        if (novoUsuarioId == 0) {
+            System.out.println("ERRO: Falha ao criar o usuário. Abortando cadastro da farmácia.");
+            return;
         }
+        System.out.println("Usuário (ID: " + novoUsuarioId + ") criado com sucesso.");
 
-        // --- 2. Seleção de Endereço ---
-        if (idEndereco.equals("0")) {
-            boolean valido = false;
-            System.out.println("\n--- Seleção de Endereço ---");
-            Endereco.exibirEnderecos(null); // Apenas lista os endereços
-            do{
-                System.out.println("Escolha um ID de endereço válido (ex: 4a2b3c1):");
-                idEndereco = sc.nextLine();
+        // --- ETAPA 2: Criar o Endereço ---
+        System.out.println("\n--- Etapa 2: Dados de Endereço ---");
+        // Chama o 'inserirEndereco' do controller Endereco
+        novoEnderecoId = e.inserirEndereco(sc);
 
-                String sql = "SELECT id FROM enderecos WHERE id = ?";
-                try (Connection con = Conexao.getConnection(); PreparedStatement stmt = con.prepareStatement(sql)) {
-                    stmt.setString(1, idEndereco);
-                    ResultSet rs = stmt.executeQuery();
-                    if (rs.next()){
-                        valido = true;
-                    } else {
-                        System.out.println("ID de endereço não encontrado. Tente novamente.");
-                        idEndereco = "0";
-                    }
-                } catch (SQLException e) {
-                    System.out.println("Erro ao validar endereço: " + e.getMessage());
-                }
-            } while(!valido);
+        if (novoEnderecoId.equals("0")) {
+            System.out.println("ERRO: Falha ao criar o endereço. Abortando cadastro da farmácia.");
+            // (Opcional: deletar o usuário criado na Etapa 1 para não deixar "lixo")
+            return;
         }
+        System.out.println("Endereço (ID: " + novoEnderecoId + ") criado com sucesso.");
 
-        // --- 3. Coleta de Dados da Farmácia (com validação) ---
+
+        // --- ETAPA 3: Criar a Farmácia (com validação) ---
         try (Connection con = Conexao.getConnection()) {
-            System.out.println("\n--- Dados da Farmácia ---");
+            System.out.println("\n--- Etapa 3: Dados da Farmácia ---");
 
             String nomeJuridico;
             do {
@@ -196,11 +158,8 @@ public class Farmacia {
             String nomeFantasia;
             do {
                 System.out.println("Digite o nome fantasia:");
-                // Nota: Nomes fantasia podem ter números (ex: "Drogaria 24h").
-                // Vamos usar uma validação mais permissiva ou apenas checar se não está vazio.
-                // Por agora, mantendo o validarApenasLetras que você pediu:
                 nomeFantasia = validarApenasLetras(sc.nextLine());
-                if (nomeFantasia == null) System.out.println("ERRO: Nome inválido. Digite apenas letras e espaços.");
+                if (nomeFantasia == null) System.out.println("ERRO: Nome fantasia inválido. Digite apenas letras e espaços.");
             } while (nomeFantasia == null);
 
 
@@ -211,8 +170,12 @@ public class Farmacia {
                 if (cnpjValidado == null) System.out.println("CNPJ inválido. Digite 14 números.");
             } while (cnpjValidado == null);
 
-            System.out.println("Digite o alvará sanitário: ");
-            String alvara = sc.nextLine();
+            String alvara;
+            do {
+                System.out.println("Digite o alvará sanitário (apenas números, 4-50 dígitos): ");
+                alvara = validarNumero(sc.nextLine(), 4, 50);
+                if (alvara == null) System.out.println("ERRO: Alvará inválido. Digite de 4 a 50 números.");
+            } while (alvara == null);
 
             String responsavel;
             do {
@@ -221,8 +184,12 @@ public class Farmacia {
                 if (responsavel == null) System.out.println("ERRO: Nome inválido. Digite apenas letras e espaços.");
             } while (responsavel == null);
 
-            System.out.println("Digite o CRF do responsável:");
-            String crf = sc.nextLine();
+            String crf;
+            do {
+                System.out.println("Digite o CRF do responsável (apenas números, 1 a 5 dígitos):");
+                crf = validarNumero(sc.nextLine(), 1, 5); // Corrigido
+                if (crf == null) System.out.println("ERRO: CRF inválido. Digite de 1 a 5 números.");
+            } while (crf == null);
 
             String telefoneValidado;
             do {
@@ -242,25 +209,18 @@ public class Farmacia {
                 stmt.setString(5, responsavel);
                 stmt.setString(6, crf);
                 stmt.setString(7, telefoneValidado);
-                stmt.setString(8, idEndereco);
-                stmt.setInt(9, idUsuario);
+                stmt.setString(8, novoEnderecoId); // ID do Endereço da Etapa 2
+                stmt.setInt(9, novoUsuarioId); // ID do Usuário da Etapa 1
                 stmt.executeUpdate();
-                System.out.println("Farmácia inserida com sucesso!");
 
-                // Pega o ID da farmácia recém-criada (baseado no usuario_id, que é UNIQUE)
-                String sql4 = "SELECT id FROM farmacias WHERE usuario_id = ?";
-                try (PreparedStatement stmt4 = con.prepareStatement(sql4)) {
-                    stmt4.setInt(1, idUsuario);
-                    ResultSet rs = stmt4.executeQuery();
-                    if (rs.next()){
-                        idFarmacia = rs.getInt("id");
-                    }
-                }
+                System.out.println("\n==============================================");
+                System.out.println("FARMÁCIA CADASTRADA COM SUCESSO!");
+                System.out.println("==============================================");
             }
-        } catch (SQLException e) {
-            System.out.println("Erro ao inserir farmácia: " + e.getMessage());
+        } catch (SQLException ex) { // <-- Variável 'e' renomeada para 'ex'
+            System.out.println("ERRO CRÍTICO ao inserir farmácia: " + ex.getMessage());
+            // (Opcional: deletar o usuário e endereço criados)
         }
-        return idFarmacia;
     }
 
     /**
@@ -271,7 +231,7 @@ public class Farmacia {
 
         try (Connection con = Conexao.getConnection()) {
 
-            // --- CORREÇÃO: Validação de ID (NumberFormatException) ---
+            // --- Validação de ID (NumberFormatException) ---
             boolean idValido = false;
             do {
                 System.out.println("Digite o ID da farmácia que deseja atualizar: ");
@@ -285,11 +245,11 @@ public class Farmacia {
                         System.out.println("ERRO: O ID deve ser um número positivo.");
                     }
                 } catch (NumberFormatException e) {
-                    // Se o 'parseInt' falhar (ex: string vazia ou "abc")
+                    // Se o 'parseInt' falhar (ex: string vazia "" ou "abc")
                     System.out.println("ERRO: Entrada inválida. Digite apenas números.");
                 }
             } while (!idValido);
-            // --- FIM DA CORREÇÃO ---
+            // --- FIM DA Validação ---
 
             String sel = "SELECT * FROM farmacias WHERE id = ?";
             try (PreparedStatement selStmt = con.prepareStatement(sel)) {
@@ -326,7 +286,7 @@ public class Farmacia {
                     System.out.println("Digite o novo nome fantasia (ou Enter para manter: " + nomeFantasiaAtual + "):");
                     nomeFantasia = sc.nextLine();
                     if (nomeFantasia.isEmpty()) break;
-                    nomeFantasia = validarApenasLetras(nomeFantasia); // Mantendo sua restrição
+                    nomeFantasia = validarApenasLetras(nomeFantasia);
                     if (nomeFantasia == null) System.out.println("ERRO: Nome inválido. Digite apenas letras e espaços.");
                 } while (nomeFantasia == null);
 
@@ -339,8 +299,14 @@ public class Farmacia {
                     if (cnpj == null) System.out.println("CNPJ inválido (14 números).");
                 } while (cnpj == null);
 
-                System.out.println("Digite o novo alvará (ou Enter para manter: " + alvaraAtual + "):");
-                String alvara = sc.nextLine();
+                String alvara;
+                do {
+                    System.out.println("Digite o novo alvará (apenas números, 4-50 dígitos) (ou Enter para manter: " + alvaraAtual + "):");
+                    String alvaraDigitado = sc.nextLine();
+                    if (alvaraDigitado.isEmpty()) { alvara = ""; break; } // Permite pular
+                    alvara = validarNumero(alvaraDigitado, 4, 50);
+                    if (alvara == null) System.out.println("ERRO: Alvará inválido. Digite de 4 a 50 números.");
+                } while (alvara == null);
 
                 String responsavel;
                 do {
@@ -351,8 +317,14 @@ public class Farmacia {
                     if (responsavel == null) System.out.println("ERRO: Nome inválido. Digite apenas letras e espaços.");
                 } while (responsavel == null);
 
-                System.out.println("Digite o novo CRF (ou Enter para manter: " + crfAtual + "):");
-                String crf = sc.nextLine();
+                String crf;
+                do {
+                    System.out.println("Digite o novo CRF (apenas números, 1-5 dígitos) (ou Enter para manter: " + crfAtual + "):");
+                    String crfDigitado = sc.nextLine();
+                    if (crfDigitado.isEmpty()) { crf = ""; break; } // Permite pular
+                    crf = validarNumero(crfDigitado, 1, 5); // Corrigido
+                    if (crf == null) System.out.println("ERRO: CRF inválido. Digite de 1 a 5 números.");
+                } while (crf == null);
 
                 String telefone;
                 do {
@@ -366,6 +338,7 @@ public class Farmacia {
                 // CORRIGIDO: endereco_id é String
                 System.out.println("Digite novo endereco_id (ou Enter para manter: " + enderecoAtual + "):");
                 String enderecoId = sc.nextLine();
+                // (Opcional: validar se o novo ID de endereço existe na tabela 'enderecos')
 
                 // --- Montagem do SQL Dinâmico ---
                 StringBuilder sql = new StringBuilder("UPDATE farmacias SET ");

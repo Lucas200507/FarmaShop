@@ -85,7 +85,7 @@ public class Produtos {
 
         if (grupoNome.equals("cliente")) {
             System.out.println("5. Adicionar produto aos favoritos");
-            System.out.println("6. Ver meus favoritos (usando a VIEW)");
+            System.out.println("6. Ver meus favoritos");
         }
 
         System.out.println("4. Voltar ao menu principal");
