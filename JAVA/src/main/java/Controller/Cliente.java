@@ -1,134 +1,122 @@
 package Controller;
 
 import Database.Conexao;
+import Controller.Usuario;
 import java.sql.*;
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
+
 
 public class Cliente {
-    private static String validarNumero(String valor, int TamMin, int TamMax) {
-        if (valor == null) return null;
-        String valorLimpo = valor.replaceAll("[^0-9]", "");
-        if (valorLimpo.length() >= TamMin && valorLimpo.length() <= TamMax) return valorLimpo;
-        return null;
-    }
 
-    private static boolean validarUnico(String valor, String tipo) {
-        // Query segura (usa PreparedStatement)
-        String sql = "SELECT 1 FROM clientes WHERE " + tipo + " = ?";
-
+    private static String validarNumerosETamanho(String valor, int tamanhoMinimo, int tamanhoMaximo, String tipo) {
+        // Fazer a verificação de telefone e cpf unicos
+        String sql = "SELECT * FROM clientes WHERE " + tipo + " = ?";
         try (Connection con = Conexao.getConnection();
              PreparedStatement stmt = con.prepareStatement(sql)) {
 
             stmt.setString(1, valor);
-            ResultSet rs = stmt.executeQuery();
-
-            if (rs.next()) {
-                // Se rs.next() for true, significa que o valor JÁ EXISTE
-                System.out.println("ERRO: Este " + tipo + " (" + valor + ") já está cadastrado no sistema.");
-                return false; // Inválido
-            } else {
-                return true; // Válido (não existe)
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    if (tipo.equals("cpf")) {
+                        System.out.println("CPF já cadastrado no sistema.\n CPF: " + valor);
+                    } else if (tipo.equals("telefone")) {
+                        System.out.println("Telefone já cadastrado no sistema.\n Telefone: " + valor);
+                    }
+                    return null;
+                }
             }
         } catch (SQLException e) {
-            System.out.println("Erro ao verificar " + tipo + ": " + e.getMessage());
-            return false; // Assume inválido em caso de erro
+            throw new RuntimeException("Erro ao verificar duplicidade de " + tipo + ": " + e.getMessage(), e);
         }
-    }
 
-
-    /**
-     * Valida se a string contém apenas letras, acentos e espaços.
-     */
-    private static String validarApenasLetras(String valor) {
-        if (valor == null || valor.trim().isEmpty()) {
-            return null; // Nulo ou vazio é inválido
+        if (valor == null) {
+            return null;
         }
-        String valorLimpo = valor.trim();
 
-        if (valorLimpo.matches("^[a-zA-ZÀ-ú\\s]+$")) {
+        // Remove todos os caracteres que não são dígitos (0-9)
+        String valorLimpo = valor.replaceAll("[^0-9]", "");
+
+        if (valorLimpo.length() >= tamanhoMinimo && valorLimpo.length() <= tamanhoMaximo) {
             return valorLimpo; // Válido
         } else {
             return null; // Inválido
         }
     }
 
-    /**
-     * Valida a data de nascimento (Formato AAAA-MM-DD e não ser futura).
-     */
     private static LocalDate validarDataNascimento(String dataStr) {
         if (dataStr == null || dataStr.trim().isEmpty()) {
             return null;
         }
+
+        // Define o formato esperado (ISO)
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+
         try {
             LocalDate dataNascimento = LocalDate.parse(dataStr, formatter);
+
+            // Validação 2: Não pode ser uma data futura
             if (dataNascimento.isAfter(LocalDate.now())) {
                 System.out.println("ERRO: A data de nascimento não pode ser uma data futura.");
                 return null;
             }
+
             return dataNascimento; // Data válida
+
         } catch (DateTimeParseException e) {
+            // Validação 1: Formato inválido ou data inexistente (ex: 2000-02-30)
             System.out.println("ERRO: Formato de data inválido. Use o padrão AAAA-MM-DD (ex: 1990-05-15).");
             return null;
         }
     }
 
-    /**
-     * Exibe o menu de gerenciamento de clientes para o ADM.
-     */
+
     public static void exibirClientes() {
         Scanner sc = new Scanner(System.in);
-        System.out.println("=== CLIENTES (Visão ADM) ===");
+        System.out.println("=== CLIENTES ===");
 
-        // Mostra clientes ativos e inativos
-        String sql = "SELECT c.*, u.situacao FROM clientes c JOIN usuarios u ON c.usuario_id = u.id ORDER BY c.nome";
+        String sql = "SELECT * FROM clientes;";
 
         try (Connection con = Conexao.getConnection();
              PreparedStatement stmt = con.prepareStatement(sql);
              ResultSet rs = stmt.executeQuery()) {
 
-            boolean existe = false;
             while (rs.next()) {
-                existe = true;
-                System.out.println("ID Cliente: " + rs.getInt("id"));
+                System.out.println("ID: " + rs.getInt("id"));
                 System.out.println("Nome: " + rs.getString("nome"));
                 System.out.println("CPF: " + rs.getString("cpf"));
                 System.out.println("Telefone: " + rs.getString("telefone"));
-                System.out.println("Situação Usuário: " + rs.getString("situacao"));
                 System.out.println("============================================");
             }
-            if (!existe) System.out.println("Nenhum cliente cadastrado.");
 
         } catch (SQLException e) {
             System.out.println("Erro ao exibir clientes: " + e.getMessage());
         }
 
+        // Menu de opções
         System.out.println("\nDigite a opção que preferir:");
-        System.out.println("1. Inserir novo cliente (Fluxo Completo)");
+        System.out.println("1. Inserir novo cliente");
         System.out.println("2. Atualizar cliente");
-        System.out.println("3. Desativar cliente (Recomendado)");
+        System.out.println("3. Deletar cliente");
         System.out.println("4. Sair da aba clientes");
 
-        int opcao = 0;
-        try {
-            opcao = Integer.parseInt(sc.nextLine());
-        } catch (NumberFormatException e) { /* Opção continua 0 */ }
-
+        int opcao = sc.nextInt();
+        sc.nextLine();
+        Cliente c = new Cliente();
         switch (opcao) {
             case 1:
-                inserirCliente(sc); // Chama o novo fluxo
+                int idCliente = c.inserirCliente(sc, 0, "0");
                 break;
             case 2:
-                // O método 'atualizarCliente' do ADM pede o ID do cliente (passando 0)
+                // CORREÇÃO: Passando o Scanner 'sc' e 0 (para indicar que é do menu ADM)
                 atualizarCliente(sc, 0);
                 break;
             case 3:
-                desativarCliente(sc); // Corrigido para desativar
+                deletarCliente(sc);
                 break;
             case 4:
                 System.out.println("Saindo...");
@@ -139,154 +127,205 @@ public class Cliente {
         }
     }
 
+    public static int inserirCliente(Scanner sc, int idUsuario, String idEndereco) {
+        int usuario_id = 0;
+        String endereco_id = "0";
 
-    public static void inserirCliente(Scanner sc) {
-        System.out.println("\n=== CRIAR NOVA CONTA DE CLIENTE (Passo-a-passo) ===");
+        if (idUsuario == 0) {
+            System.out.println("--- Cadastro de Usuário (Conta) ---");
+            usuario_id = new Usuario().inserirUsuario(sc, 2);
 
-        // Instâncias dos outros controllers
-        Usuario u = new Usuario();
-        Endereco e = new Endereco();
-
-        int novoUsuarioId = 0;
-        String novoEnderecoId = "0";
-
-        // --- ETAPA 1: Criar o Usuário ---
-        System.out.println("--- Etapa 1: Dados de Login (Usuário) ---");
-        // Chama o 'inserirUsuario' do controller Usuario, forçando o grupo 2 (cliente)
-        novoUsuarioId = u.inserirUsuario(sc, 2);
-
-        if (novoUsuarioId == 0) {
-            System.out.println("ERRO: Falha ao criar o usuário. Abortando cadastro.");
-            return;
+            if (usuario_id == 0) {
+                System.out.println("Falha ao criar o Usuário. Cadastro de Cliente cancelado.");
+                return 0;
+            }
+        } else {
+            usuario_id = idUsuario;
         }
-        System.out.println("Usuário (ID: " + novoUsuarioId + ") criado com sucesso.");
 
-        // --- ETAPA 2: Criar o Endereço ---
-        System.out.println("\n--- Etapa 2: Dados de Endereço ---");
-        // Chama o 'inserirEndereco' do controller Endereco
-        novoEnderecoId = e.inserirEndereco(sc);
-
-        if (novoEnderecoId.equals("0")) {
-            System.out.println("ERRO: Falha ao criar o endereço. Abortando cadastro.");
-            // (Opcional: deletar o usuário criado na Etapa 1)
-            return;
+        if (idEndereco.equals("0")) {
+            boolean valido = false;
+            do {
+                System.out.println("Escolha o ID do Endereço (ou digite um ID válido, Endereco.exibirEnderecos deve estar funcionando):");
+                endereco_id = sc.nextLine();
+                String sql = "SELECT id FROM enderecos WHERE id = ?";
+                try (Connection con = Conexao.getConnection(); PreparedStatement stmt = con.prepareStatement(sql)) {
+                    stmt.setString(1, endereco_id);
+                    try (ResultSet rs = stmt.executeQuery()) {
+                        if (rs.next()) {
+                            valido = true;
+                        } else {
+                            System.out.println("ID de endereço inválido. Tente novamente.");
+                            endereco_id = "0";
+                        }
+                    }
+                } catch (SQLException e) {
+                    System.out.println("Erro ao validar endereço: " + e.getMessage());
+                    endereco_id = "0";
+                }
+            } while (!valido);
+        } else {
+            endereco_id = idEndereco;
         }
-        System.out.println("Endereço (ID: " + novoEnderecoId + ") criado com sucesso.");
 
-        // --- ETAPA 3: Criar o Cliente (com validação) ---
+
+        String nome, cpfValidado, telefoneValidado;
+        LocalDate dataNascimentoValida = null;
+
+        System.out.println("--- Dados Pessoais do Cliente ---");
+
+        System.out.println("Digite o nome completo do cliente:");
+        nome = sc.nextLine();
+
+        do {
+            System.out.println("Digite o CPF (11 dígitos, apenas números):");
+            String cpfDigitado = sc.nextLine();
+            cpfValidado = validarNumerosETamanho(cpfDigitado, 11, 11, "cpf");
+            if (cpfValidado == null) {
+                System.out.println("ERRO: CPF inválido. Digite 11 dígitos numéricos e verifique se já está cadastrado.");
+            }
+        } while (cpfValidado == null);
+
+        do {
+            System.out.println("Digite o telefone (10 ou 11 dígitos, apenas números. Ex: DD + Número):");
+            String telDigitado = sc.nextLine();
+            telefoneValidado = validarNumerosETamanho(telDigitado, 10, 11, "telefone");
+            if (telefoneValidado == null) {
+                System.out.println("ERRO: Telefone inválido. Digite 10 ou 11 dígitos numéricos (incluindo o DDD) e verifique se já está cadastrado.");
+            }
+        } while (telefoneValidado == null);
+
+        do {
+            System.out.println("Digite a Data de nascimento (AAAA-MM-DD):");
+            String dataNascimentoDigitada = sc.nextLine();
+            dataNascimentoValida = validarDataNascimento(dataNascimentoDigitada);
+        } while (dataNascimentoValida == null);
+
         try (Connection con = Conexao.getConnection()) {
-            System.out.println("\n--- Etapa 3: Dados Pessoais do Cliente ---");
-
-            String nome;
-            do {
-                System.out.println("Digite o nome do cliente:");
-                nome = validarApenasLetras(sc.nextLine());
-                if (nome == null) System.out.println("ERRO: Nome inválido. Digite apenas letras e espaços.");
-            } while (nome == null);
-
-
-            String cpfValidado;
-            do {
-                System.out.println("Digite o CPF (11 dígitos, apenas números):");
-                String cpfDigitado = sc.nextLine();
-                cpfValidado = validarNumero(cpfDigitado, 11, 11);
-                if (cpfValidado == null) {
-                    System.out.println("ERRO: CPF inválido. Digite 11 dígitos numéricos.");
-                } else {
-                    // Se o formato é válido, checa se é único
-                    if (!validarUnico(cpfValidado, "cpf")) {
-                        cpfValidado = null; // Falhou na validação de duplicado
-                    }
-                }
-            } while (cpfValidado == null);
-
-            String telefoneValidado;
-            do {
-                System.out.println("Digite o telefone (10 ou 11 dígitos, DDD + Número):");
-                String telDigitado = sc.nextLine();
-                telefoneValidado = validarNumero(telDigitado, 10, 11);
-                if (telefoneValidado == null) {
-                    System.out.println("ERRO: Telefone inválido (10 ou 11 dígitos).");
-                } else {
-                    // Se o formato é válido, checa se é único
-                    if (!validarUnico(telefoneValidado, "telefone")) {
-                        telefoneValidado = null; // Falhou na validação de duplicado
-                    }
-                }
-            } while (telefoneValidado == null);
-
-            LocalDate dataNascimentoValida = null;
-            do {
-                System.out.println("Digite a Data de nascimento (AAAA-MM-DD):");
-                String dataNascimentoDigitada = sc.nextLine();
-                dataNascimentoValida = validarDataNascimento(dataNascimentoDigitada);
-                // O método validarDataNascimento já imprime o erro
-            } while (dataNascimentoValida == null);
-
-            // --- Inserção no Banco de Dados ---
+            // Usando PreparedStatement com RETURN_GENERATED_KEYS para capturar o ID auto_increment
             String sql = "INSERT INTO clientes (nome, cpf, telefone, data_nascimento, usuario_id, endereco_id) VALUES (?, ?, ?, ?, ?, ?)";
-            // Pedimos o ID gerado (Auto_Increment)
+
+            // Adiciona Statement.RETURN_GENERATED_KEYS para obter o ID gerado
             try (PreparedStatement stmt = con.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
                 stmt.setString(1, nome);
                 stmt.setString(2, cpfValidado);
                 stmt.setString(3, telefoneValidado);
                 stmt.setDate(4, Date.valueOf(dataNascimentoValida));
-                stmt.setInt(5, novoUsuarioId); // ID da Etapa 1
-                stmt.setString(6, novoEnderecoId); // ID da Etapa 2
+                stmt.setInt(5, usuario_id);
+                stmt.setString(6, endereco_id);
 
-                stmt.executeUpdate();
-                System.out.println("\n==============================================");
-                System.out.println("CLIENTE CADASTRADO COM SUCESSO!");
-                System.out.println("==============================================");
+                int affectedRows = stmt.executeUpdate();
+
+                if (affectedRows > 0) {
+                    // Captura o ID gerado (auto_increment)
+                    try (ResultSet generatedKeys = stmt.getGeneratedKeys()) {
+                        if (generatedKeys.next()) {
+                            int idCliente = generatedKeys.getInt(1);
+                            System.out.println("Cliente inserido com sucesso! ID do Cliente: " + idCliente);
+                            return idCliente;
+                        } else {
+                            System.out.println("Cliente inserido, mas falha ao obter o ID gerado.");
+                            return 0;
+                        }
+                    }
+                } else {
+                    System.out.println("Falha ao inserir o cliente.");
+                    return 0;
+                }
             }
 
-        } catch (SQLException ex) {
-            System.out.println("ERRO CRÍTICO ao inserir cliente: " + ex.getMessage());
-            // (Opcional: deletar usuário e endereço)
+        } catch (SQLException e) {
+            System.out.println("Erro ao inserir cliente: " + e.getMessage());
+            return 0;
+        } catch (NumberFormatException e) {
+            // Este catch é menos provável de ser ativado agora, mas mantemos por segurança.
+            System.out.println("Erro de formato ao processar ID de endereço: " + e.getMessage());
+            return 0;
         }
     }
 
 
-    public static void atualizarCliente(Scanner sc, int usuarioId) {
+    private static String lerCampoOpcional(Scanner sc, String label, String atual) {
+        System.out.print("Digite o " + label + " (ou Enter para manter: " + atual + "): ");
+        String valor = sc.nextLine();
+        return valor.isEmpty() ? "" : valor;
+    }
 
+    private static String lerCampoNumerico(Scanner sc, String label, String atual, int min, int max) {
+        while (true) {
+            System.out.print("Digite o " + label + " (" + min + " a " + max + " dígitos, ou Enter para manter: " + atual + "): ");
+            String entrada = sc.nextLine();
+
+            if (entrada.isEmpty()) return "";
+
+            String valorLimpo = entrada.replaceAll("[^0-9]", "");
+
+            if (valorLimpo.length() >= min && valorLimpo.length() <= max) {
+                // Se a entrada não estava vazia, retornamos o valor limpo (apenas números)
+                return valorLimpo;
+            } else {
+                System.out.println("ERRO: valor inválido. Digite apenas números com " + min + " a " + max + " dígitos.");
+            }
+        }
+    }
+
+    private static String lerCampoData(Scanner sc, String label, String atual) {
+        while (true) {
+            System.out.print("Digite a " + label + " (AAAA-MM-DD, ou Enter para manter: " + atual + "): ");
+            String entrada = sc.nextLine();
+
+            if (entrada.isEmpty()) return "";
+
+            try {
+                LocalDate dataValida = validarDataNascimento(entrada);
+                if (dataValida != null) {
+                    return entrada;
+                }
+            } catch (Exception e) {
+                System.out.println("ERRO: data inválida. Formato correto: AAAA-MM-DD.");
+            }
+        }
+    }
+
+    public static void atualizarCliente(Scanner sc, Integer idUsuario) {
         try (Connection con = Conexao.getConnection()) {
 
-            int idClienteParaAtualizar; // Este é o ID da tabela 'clientes'
-
             // --- Determina o cliente a ser atualizado ---
-            if (usuarioId == 0) { // Se for 0, é o ADM, então pergunta
-                System.out.print("Digite o ID do CLIENTE (da tabela clientes) que deseja atualizar: ");
+            int idBusca;
+            String campoBusca;
+            if (idUsuario == null || idUsuario == 0) {
+                System.out.print("Digite o ID do cliente que deseja atualizar: ");
+
+                // Trata a leitura do ID pelo ADM
                 try {
-                    idClienteParaAtualizar = Integer.parseInt(sc.nextLine());
-                } catch (NumberFormatException e) {
-                    System.out.println("ID inválido.");
+                    idBusca = sc.nextInt();
+                    sc.nextLine(); // limpa o buffer
+                } catch (java.util.InputMismatchException e) {
+                    System.out.println("Entrada inválida. Por favor, insira um número para o ID do cliente.");
+                    sc.nextLine(); // Limpa a entrada com erro
                     return;
                 }
-            } else { // Se for > 0, é o próprio cliente logado
-                // Precisamos achar o ID do cliente baseado no usuario_id
-                String sqlFind = "SELECT id FROM clientes WHERE usuario_id = ?";
-                try(PreparedStatement stmtFind = con.prepareStatement(sqlFind)) {
-                    stmtFind.setInt(1, usuarioId);
-                    ResultSet rsFind = stmtFind.executeQuery();
-                    if(rsFind.next()) {
-                        idClienteParaAtualizar = rsFind.getInt("id");
-                    } else {
-                        System.out.println("Erro: Nenhum perfil de cliente encontrado para seu usuário.");
-                        return;
-                    }
-                }
+
+                campoBusca = "id";
+            } else {
+                idBusca = idUsuario;
+                campoBusca = "usuario_id";
             }
 
             // --- Busca os dados atuais ---
-            String sqlSelect = "SELECT * FROM clientes WHERE id = ?";
+            String sqlSelect = "SELECT * FROM clientes WHERE " + campoBusca + " = ?";
+
             try (PreparedStatement stmtSelect = con.prepareStatement(sqlSelect)) {
-                stmtSelect.setInt(1, idClienteParaAtualizar);
+                stmtSelect.setInt(1, idBusca);
                 ResultSet rs = stmtSelect.executeQuery();
 
                 if (!rs.next()) {
-                    System.out.println("Cliente com ID " + idClienteParaAtualizar + " não encontrado.");
+                    System.out.println("Cliente não encontrado.");
                     return;
                 }
+
+                // ID do Cliente
+                int idClienteAtualizar = rs.getInt("id");
 
                 // Dados atuais
                 String nomeAtual = rs.getString("nome");
@@ -295,148 +334,135 @@ public class Cliente {
                 String dataNascimentoAtual = rs.getString("data_nascimento");
 
                 // --- Entradas atualizadas ---
-                System.out.println("Deixe em branco (aperte Enter) para manter o valor atual.");
+                System.out.println("--- Dados Atuais do Cliente (ID: " + idClienteAtualizar + ") ---");
+                String nome = lerCampoOpcional(sc, "novo nome", nomeAtual);
+                String cpf = lerCampoNumerico(sc, "novo CPF", cpfAtual, 11, 11);
+                String telefone = lerCampoNumerico(sc, "novo telefone", telefoneAtual, 10, 11);
+                String dataNascimento = lerCampoData(sc, "nova Data de nascimento", dataNascimentoAtual);
 
-                String nome;
-                do {
-                    System.out.print("Digite o novo nome (Atual: " + nomeAtual + "): ");
-                    nome = sc.nextLine();
-                    if (nome.isEmpty()) break;
-                    nome = validarApenasLetras(nome);
-                    if (nome == null) System.out.println("ERRO: Nome inválido. Apenas letras e espaços.");
-                } while (nome == null);
-
-                String cpf;
-                do {
-                    System.out.print("Digite o novo CPF (Atual: " + cpfAtual + "): ");
-                    String cpfInput = sc.nextLine();
-                    if (cpfInput.isEmpty()) { cpf = ""; break; }
-                    cpf = validarNumero(cpfInput, 11, 11);
-                    if (cpf == null) {
-                        System.out.println("ERRO: CPF inválido (11 números).");
-                    } else {
-                        // Só checa duplicidade se o CPF for NOVO
-                        if (!cpf.equals(cpfAtual) && !validarUnico(cpf, "cpf")) {
-                            cpf = null; // Falhou
-                        }
+                // Validação de unicidade para CPF e Telefone (apenas se alterados)
+                if (!cpf.isEmpty()) {
+                    String cpfValidado = validarNumerosETamanho(cpf, 11, 11, "cpf");
+                    // Adicionei uma verificação mais clara se o novo CPF é diferente do atual
+                    if (cpfValidado == null && !cpf.replaceAll("[^0-9]", "").equals(cpfAtual)) {
+                        System.out.println("ERRO: Novo CPF inválido ou já cadastrado. Operação cancelada.");
+                        return;
                     }
-                } while (cpf == null);
-
-                String telefone;
-                do {
-                    System.out.print("Digite o novo telefone (Atual: " + telefoneAtual + "): ");
-                    String telInput = sc.nextLine();
-                    if (telInput.isEmpty()) { telefone = ""; break; }
-                    telefone = validarNumero(telInput, 10, 11);
-                    if (telefone == null) {
-                        System.out.println("ERRO: Telefone inválido (10 ou 11 números).");
-                    } else {
-                        // Só checa duplicidade se o Telefone for NOVO
-                        if (!telefone.equals(telefoneAtual) && !validarUnico(telefone, "telefone")) {
-                            telefone = null; // Falhou
-                        }
+                    cpf = cpfValidado;
+                }
+                if (!telefone.isEmpty()) {
+                    String telefoneValidado = validarNumerosETamanho(telefone, 10, 11, "telefone");
+                    // Adicionei uma verificação mais clara se o novo telefone é diferente do atual
+                    if (telefoneValidado == null && !telefone.replaceAll("[^0-9]", "").equals(telefoneAtual)) {
+                        System.out.println("ERRO: Novo Telefone inválido ou já cadastrado. Operação cancelada.");
+                        return;
                     }
-                } while (telefone == null);
+                    telefone = telefoneValidado;
+                }
 
-                String dataNascimento;
-                do {
-                    System.out.print("Digite a nova Data de nascimento (AAAA-MM-DD) (Atual: " + dataNascimentoAtual + "): ");
-                    dataNascimento = sc.nextLine();
-                    if (dataNascimento.isEmpty()) break;
-                    if (validarDataNascimento(dataNascimento) == null) {
-                        dataNascimento = null; // Força repetição
-                    }
-                } while (dataNascimento == null);
 
-                // --- Monta o SQL dinamicamente ---
-                StringBuilder sqlUpdate = new StringBuilder("UPDATE clientes SET ");
-                List<Object> params = new ArrayList<>();
-                boolean first = true;
+                // --- Monta o SQL dinamicamente (Usando PreparedStatement) ---
+                List<String> campos = new java.util.ArrayList<>();
+                List<Object> valores = new java.util.ArrayList<>();
 
-                if (!nome.isEmpty()) { sqlUpdate.append("nome = ?"); params.add(nome); first = false; }
-                if (!cpf.isEmpty()) { if (!first) sqlUpdate.append(", "); sqlUpdate.append("cpf = ?"); params.add(cpf); first = false; }
-                if (!telefone.isEmpty()) { if (!first) sqlUpdate.append(", "); sqlUpdate.append("telefone = ?"); params.add(telefone); first = false; }
-                if (dataNascimento != null && !dataNascimento.isEmpty()) { if (!first) sqlUpdate.append(", "); sqlUpdate.append("data_nascimento = ?"); params.add(dataNascimento); first = false; }
 
-                if (params.isEmpty()) {
-                    System.out.println("Nenhum campo foi alterado.");
+                if (!nome.isEmpty()) {
+                    campos.add("nome = ?");
+                    valores.add(nome);
+                }
+                if (!cpf.isEmpty()) {
+                    campos.add("cpf = ?");
+                    valores.add(cpf);
+                }
+                if (!telefone.isEmpty()) {
+                    campos.add("telefone = ?");
+                    valores.add(telefone);
+                }
+                if (!dataNascimento.isEmpty()) {
+                    campos.add("data_nascimento = ?");
+                    valores.add(Date.valueOf(dataNascimento));
+                }
+
+                if (campos.isEmpty()) {
+                    System.out.println("Nenhum campo foi alterado. Operação cancelada.");
                     return;
                 }
 
+                StringBuilder sqlUpdate = new StringBuilder("UPDATE clientes SET ");
+                sqlUpdate.append(String.join(", ", campos));
                 sqlUpdate.append(" WHERE id = ?");
-                params.add(idClienteParaAtualizar);
 
-                // Evita Injeção de SQL usando PreparedStatement
                 try (PreparedStatement stmtUpdate = con.prepareStatement(sqlUpdate.toString())) {
-                    for(int i = 0; i < params.size(); i++) {
-                        stmtUpdate.setObject(i + 1, params.get(i));
+                    int paramIndex = 1;
+                    for (Object valor : valores) {
+                        stmtUpdate.setObject(paramIndex++, valor);
                     }
+                    stmtUpdate.setInt(paramIndex, idClienteAtualizar); // ID do Cliente para o WHERE
+
                     stmtUpdate.executeUpdate();
                     System.out.println("Cliente atualizado com sucesso!");
                 }
+
             }
+
         } catch (SQLException e) {
             System.out.println("Erro ao atualizar cliente: " + e.getMessage());
+        } catch (java.util.InputMismatchException e) {
+            // Este catch foi movido para dentro da lógica de leitura do ID quando idUsuario == 0
+            System.out.println("Erro de entrada inesperado: " + e.getMessage());
         }
     }
 
-    private static void desativarCliente(Scanner sc) {
+
+    private static void deletarCliente(Scanner sc) {
         try (Connection con = Conexao.getConnection()) {
+            System.out.println("Digite o ID do cliente que deseja deletar:");
+            int id = sc.nextInt();
+            sc.nextLine();
 
-            int idCliente = 0;
-            boolean idValido = false;
-            do {
-                System.out.println("Digite o ID do CLIENTE (da tabela clientes) a DESATIVAR:");
-                String idInput = sc.nextLine();
-                try {
-                    idCliente = Integer.parseInt(idInput);
-                    if (idCliente > 0) idValido = true;
-                    else System.out.println("ERRO: O ID deve ser um número positivo.");
-                } catch (NumberFormatException e) {
-                    System.out.println("ERRO: Entrada inválida. Digite apenas números.");
-                }
-            } while (!idValido);
-
-
-            System.out.println("Tem certeza que deseja desativar o cliente ID " + idCliente + "? (S/N)");
-            System.out.println("Isso irá desativar o usuário associado (login).");
+            System.out.println("Tem certeza que deseja deletar o cliente ID " + id + "? (S/N)");
             String confirmacao = sc.nextLine();
 
             if (confirmacao.equalsIgnoreCase("S")) {
+                String sql = "DELETE FROM clientes WHERE id = ?";
+                try (PreparedStatement stmt = con.prepareStatement(sql)) {
+                    stmt.setInt(1, id);
+                    int rowsAffected = stmt.executeUpdate();
 
-                // 1. Achar o usuario_id do cliente
-                int usuarioId = 0;
-                String sqlFind = "SELECT usuario_id FROM clientes WHERE id = ?";
-                try (PreparedStatement stmtFind = con.prepareStatement(sqlFind)) {
-                    stmtFind.setInt(1, idCliente);
-                    ResultSet rs = stmtFind.executeQuery();
-                    if (rs.next()) {
-                        usuarioId = rs.getInt("usuario_id");
+                    if (rowsAffected > 0) {
+                        System.out.println("Cliente deletado com sucesso!");
                     } else {
-                        System.out.println("Erro: Cliente com ID " + idCliente + " não encontrado.");
-                        return;
+                        System.out.println("Cliente não encontrado (ID " + id + ").");
                     }
                 }
-
-                // 2. Desativar o usuário (Soft Delete)
-                if (usuarioId > 0) {
-                    String sqlUpdate = "UPDATE usuarios SET situacao = 'inativo' WHERE id = ?";
-                    try (PreparedStatement stmtUpdate = con.prepareStatement(sqlUpdate)) {
-                        stmtUpdate.setInt(1, usuarioId);
-                        stmtUpdate.executeUpdate();
-                        System.out.println("Cliente (e seu usuário associado) desativado com sucesso!");
-                    }
-                }
-
             } else {
                 System.out.println("Operação cancelada.");
             }
 
         } catch (SQLException e) {
-            System.out.println("Erro ao desativar cliente: " + e.getMessage());
+            System.out.println("Erro ao deletar cliente: " + e.getMessage());
         }
     }
 
+    /**
+     * Converte o ID de um usuário (vindo do login) para o ID do cliente correspondente.
+     * @param usuarioId O ID da tabela 'usuarios'.
+     * @return O ID da tabela 'clientes', ou 0 se não for encontrado.
+     */
+    public static int getClienteIdByUsuarioId(int usuarioId) {
+        String sql = "SELECT id FROM clientes WHERE usuario_id = ?";
+        try (Connection con = Conexao.getConnection();
+             PreparedStatement stmt = con.prepareStatement(sql)) {
 
-
+            stmt.setInt(1, usuarioId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt("id"); // Retorna o ID da tabela CLIENTES
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Erro ao buscar cliente ID por usuário ID: " + e.getMessage());
+        }
+        return 0; // Cliente não encontrado
+    }
 }
