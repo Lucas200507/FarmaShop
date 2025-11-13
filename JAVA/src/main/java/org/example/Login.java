@@ -5,12 +5,17 @@ import Controller.Endereco;
 import Controller.Farmacia;
 import Controller.Usuario;
 import Database.Conexao;
+import com.mongodb.client.MongoCollection;
+import com.mongodb.client.MongoDatabase;
+import static com.mongodb.client.model.Filters.*;
+import org.bson.Document;
+
+import java.security.MessageDigest;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Scanner;
-
 
 public class Login {
     private String grupo;
@@ -102,5 +107,64 @@ public class Login {
             }
         } while (!logado);
         return logado;
+    }
+
+    public boolean realizarLoginMongo(Scanner sc) {
+        boolean logado = false;
+        MongoDatabase db = Database.ConexaoMongo.getDatabase("FarmaShop");
+        MongoCollection<Document> usuarios = db.getCollection("usuarios");
+        MongoCollection<Document> grupos = db.getCollection("gruposUsuarios");
+
+        do {
+            System.out.print("Usuário: ");
+            String usuario = sc.nextLine().trim();
+            if (usuario.isEmpty()) return false;
+
+            System.out.print("Senha: ");
+            String senha = sc.nextLine().trim();
+            if (senha.isEmpty()) return false;
+
+            // Criptografa senha igual ao MySQL: UPPER(MD5(senha))
+            String senhaCriptografada = md5Upper(senha);
+
+            // Faz a busca no MongoDB
+            Document user = usuarios.find(
+                    and(
+                            eq("email", usuario),
+                            eq("senha", senhaCriptografada),
+                            eq("situacao", "ativo")
+                    )
+            ).first();
+
+            if (user != null) {
+                // Busca o grupo do usuário (join manual)
+                Document grupoDoc = grupos.find(eq("_id", user.getObjectId("grupo_id"))).first();
+
+                this.email = user.getString("email");
+                this.id = user.getObjectId("_id").hashCode(); // só pra ter um id inteiro, se precisar
+                this.grupo = grupoDoc != null ? grupoDoc.getString("nome") : "desconhecido";
+
+                System.out.println("Login realizado com sucesso! Grupo: " + this.grupo);
+                logado = true;
+            } else {
+                System.out.println("Usuário ou senha incorretos, tente novamente.");
+            }
+
+        } while (!logado);
+
+        return logado;
+    }
+
+    // Função auxiliar para gerar MD5 maiúsculo
+    private static String md5Upper(String input) {
+        try {
+            MessageDigest md = MessageDigest.getInstance("MD5");
+            byte[] digest = md.digest(input.getBytes());
+            StringBuilder sb = new StringBuilder();
+            for (byte b : digest) sb.append(String.format("%02X", b)); // maiúsculo
+            return sb.toString();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 }
