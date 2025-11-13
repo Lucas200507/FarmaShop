@@ -13,8 +13,6 @@ import java.time.format.DateTimeParseException;
 
 public class Cliente {
 
-
-
     private static String validarNumerosETamanho(String valor, int tamanhoMinimo, int tamanhoMaximo, String tipo) {
         // Fazer a verificação de telefone e cpf unicos
         String sql = "SELECT * FROM clientes WHERE " + tipo + " = ?";
@@ -111,10 +109,11 @@ public class Cliente {
         Cliente c = new Cliente();
         switch (opcao) {
             case 1:
-                int idCliente = c.inserirCliente(sc ,0, "0");
+                int idCliente = c.inserirCliente(sc, 0, "0");
                 break;
             case 2:
-                atualizarCliente(0);
+                // CORREÇÃO: Passando o Scanner 'sc' e 0 (para indicar que é do menu ADM)
+                atualizarCliente(sc, 0);
                 break;
             case 3:
                 deletarCliente(sc);
@@ -128,7 +127,7 @@ public class Cliente {
         }
     }
 
-    public int inserirCliente(Scanner sc, int idUsuario, String idEndereco) {
+    public static int inserirCliente(Scanner sc, int idUsuario, String idEndereco) {
         int usuario_id = 0;
         String endereco_id = "0";
 
@@ -213,8 +212,6 @@ public class Cliente {
                 stmt.setString(3, telefoneValidado);
                 stmt.setDate(4, Date.valueOf(dataNascimentoValida));
                 stmt.setInt(5, usuario_id);
-
-                // CORREÇÃO: Usando setString para o ID de endereço VARCHAR
                 stmt.setString(6, endereco_id);
 
                 int affectedRows = stmt.executeUpdate();
@@ -290,9 +287,7 @@ public class Cliente {
         }
     }
 
-    public static void atualizarCliente(Integer idUsuario) {
-        Scanner sc = new Scanner(System.in);
-
+    public static void atualizarCliente(Scanner sc, Integer idUsuario) {
         try (Connection con = Conexao.getConnection()) {
 
             // --- Determina o cliente a ser atualizado ---
@@ -300,8 +295,17 @@ public class Cliente {
             String campoBusca;
             if (idUsuario == null || idUsuario == 0) {
                 System.out.print("Digite o ID do cliente que deseja atualizar: ");
-                idBusca = sc.nextInt();
-                sc.nextLine(); // limpa o buffer
+
+                // Trata a leitura do ID pelo ADM
+                try {
+                    idBusca = sc.nextInt();
+                    sc.nextLine(); // limpa o buffer
+                } catch (java.util.InputMismatchException e) {
+                    System.out.println("Entrada inválida. Por favor, insira um número para o ID do cliente.");
+                    sc.nextLine(); // Limpa a entrada com erro
+                    return;
+                }
+
                 campoBusca = "id";
             } else {
                 idBusca = idUsuario;
@@ -339,7 +343,8 @@ public class Cliente {
                 // Validação de unicidade para CPF e Telefone (apenas se alterados)
                 if (!cpf.isEmpty()) {
                     String cpfValidado = validarNumerosETamanho(cpf, 11, 11, "cpf");
-                    if (cpfValidado == null && !cpf.equals(cpfAtual)) { // Checa se é diferente do atual
+                    // Adicionei uma verificação mais clara se o novo CPF é diferente do atual
+                    if (cpfValidado == null && !cpf.replaceAll("[^0-9]", "").equals(cpfAtual)) {
                         System.out.println("ERRO: Novo CPF inválido ou já cadastrado. Operação cancelada.");
                         return;
                     }
@@ -347,7 +352,8 @@ public class Cliente {
                 }
                 if (!telefone.isEmpty()) {
                     String telefoneValidado = validarNumerosETamanho(telefone, 10, 11, "telefone");
-                    if (telefoneValidado == null && !telefone.equals(telefoneAtual)) { // Checa se é diferente do atual
+                    // Adicionei uma verificação mais clara se o novo telefone é diferente do atual
+                    if (telefoneValidado == null && !telefone.replaceAll("[^0-9]", "").equals(telefoneAtual)) {
                         System.out.println("ERRO: Novo Telefone inválido ou já cadastrado. Operação cancelada.");
                         return;
                     }
@@ -402,7 +408,8 @@ public class Cliente {
         } catch (SQLException e) {
             System.out.println("Erro ao atualizar cliente: " + e.getMessage());
         } catch (java.util.InputMismatchException e) {
-            System.out.println("Entrada inválida. Por favor, insira um número para o ID do cliente.");
+            // Este catch foi movido para dentro da lógica de leitura do ID quando idUsuario == 0
+            System.out.println("Erro de entrada inesperado: " + e.getMessage());
         }
     }
 

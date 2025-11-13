@@ -87,7 +87,7 @@ public class Produtos {
         if (grupoNome.equals("cliente")) {
             System.out.println("5. Adicionar produto aos favoritos");
             System.out.println("6. Ver meus favoritos");
-            System.out.println("7. Adicionar produto ao carrinho"); // <-- NOVA OPÇÃO
+            System.out.println("7. Adicionar produto ao carrinho");
         }
 
         System.out.println("4. Voltar ao menu principal");
@@ -160,9 +160,14 @@ public class Produtos {
                     System.out.println("Acesso negado.");
                 }
                 break;
+            default:
+                System.out.println("Opção inválida.");
         }
     }
 
+    /**
+     * Insere um produto.
+     */
     private static void inserirProduto(Scanner sc, int farmaciaId) {
         System.out.println("=== INSERIR PRODUTO ===");
         try (Connection con = Conexao.getConnection()) {
@@ -414,7 +419,12 @@ public class Produtos {
             System.out.println("Verifique se este produto não está associado a outras tabelas (ex: pedidos).");
         }
     }
-    // adiciona produto a lista de favoritos
+
+    // --- MÉTODOS DE FAVORITOS (NOVOS) ---
+
+    /**
+     * Adiciona um produto à lista de favoritos de um cliente.
+     */
     public static void adicionarFavorito(Scanner sc, int clienteId) {
         System.out.println("=== ADICIONAR FAVORITO ===");
         System.out.print("Digite o COD do produto que deseja favoritar: ");
