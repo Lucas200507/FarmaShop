@@ -330,6 +330,15 @@ FROM usuarioGrupo ug
 LEFT JOIN usuarios u ON u.id = ug.usuario_id
 LEFT JOIN gruposUsuarios g ON g.id = ug.grupo_id;
 
+-- VIEW 5
+DROP VIEW  IF EXISTS vw_enderecos;
+CREATE VIEW vw_enderecos AS 
+SELECT 
+e.*,
+c.id AS cliente_id
+FROM clientes c
+LEFT JOIN enderecos e ON c.endereco_id = e.id;
+
 -- 7. SEGURANÇA: CRIAÇÃO DE USUÁRIOS E CONTROLE DE ACESSO
 
 -- Nível 1: Administrador (DBA)
@@ -349,3 +358,4 @@ CREATE USER 'relatorio_user'@'%' IDENTIFIED BY 'SenhaRelatorioSomenteLeitura101'
 GRANT SELECT ON FarmaShop.* TO 'relatorio_user'@'%';
 
 FLUSH PRIVILEGES;
+

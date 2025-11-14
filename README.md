@@ -1,5 +1,5 @@
 # Como rodar o programa:
-- Baixar os arquivos do main<br>
+- Baixar os arquivos do main JAVA, favor, ignorar os outros arquivos fora deste diretório<br>
 - Rodar o schema do banco de dados no mysql
 ## Conectar ao Banco: 
 - No intelliJ, vá em File > Project Structure > Modules > Add '+' > Jar or Diretories > Selecione o arquivo  mysql-connector-j-9.5.0, a qual estará em FarmaShop > Java > lib.<br>
@@ -18,7 +18,8 @@ Digite:<br>
  3.Criar uma conta Farmácia<br>
  4.Sair<br>
 
-UTLIZE ESSES USUÁRIOS PARA TESTE:<br>  usuário: cliente@ | senha: 123<br>usuário: farmacia@ | senha: 123<br>usuário: adm@ | senha: 321
+UTLIZE ESSES USUÁRIOS PARA TESTE:<br>  usuário: adm@ | senha: 321<br>
+Crie outros tipos de usuários no login.
 
 ## CLIENTE:
 Escolha uma das opções: <br>
