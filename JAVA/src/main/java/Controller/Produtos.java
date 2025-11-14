@@ -1,10 +1,13 @@
 package Controller;
 
 import Database.Conexao;
+import com.mysql.cj.x.protobuf.MysqlxPrepare;
+
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
+import Controller.Endereco;
 // Removido: import Controller.Cliente;
 
 public class Produtos {
@@ -438,28 +441,29 @@ public class Produtos {
      */
     public static void adicionarFavorito(Scanner sc, int clienteId) {
         System.out.println("=== ADICIONAR FAVORITO ===");
+
         System.out.print("Digite o COD do produto que deseja favoritar: ");
         String produtoCod = sc.nextLine();
 
-        String sql = "INSERT INTO prod_favoritos (cliente_id, produto_cod) VALUES (?, ?)";
+        String sql1 = "SELECT * FROM produtos WHERE COD = ?";
 
-        try (Connection con = Conexao.getConnection();
-             PreparedStatement stmt = con.prepareStatement(sql)) {
-
-            stmt.setInt(1, clienteId);
-            stmt.setString(2, produtoCod);
-            stmt.executeUpdate();
-
-            System.out.println("Produto " + produtoCod + " adicionado aos favoritos!");
-
-        } catch (SQLException e) {
-            if (e.getErrorCode() == 1062) { // "Duplicate entry"
-                System.out.println("Erro: Este produto já está nos seus favoritos.");
-            } else if (e.getErrorCode() == 1452) { // "Foreign key constraint fails"
-                System.out.println("Erro: Produto com COD '" + produtoCod + "' não encontrado.");
+        try {
+            Connection con = Conexao.getConnection();
+            PreparedStatement stmt1 = con.prepareStatement(sql1);
+            stmt1.setString(1, produtoCod);
+            ResultSet rs1 = stmt1.executeQuery();
+            if(rs1.next()){
+                String sql = "INSERT INTO prod_favoritos (cliente_id, produto_cod) VALUES (?, ?)";
+                PreparedStatement stmt = con.prepareStatement(sql);
+                stmt.setInt(1, clienteId);
+                stmt.setString(2, produtoCod);
+                stmt.executeUpdate();
+                System.out.println("Produto " + produtoCod + " adicionado aos favoritos!");
             } else {
-                System.out.println("Erro ao adicionar favorito: " + e.getMessage());
+                System.out.println("Erro: Produto com COD '" + produtoCod + "' não encontrado.");
             }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -483,9 +487,9 @@ public class Produtos {
             while (rs.next()) {
                 existe = true;
                 System.out.println("COD: " + rs.getString("COD"));
-                System.out.println("Nome: " + rs.getString("produtoNome"));
+                System.out.println("Nome: " + rs.getString("produto"));
                 System.out.println("Preço: R$ " + rs.getDouble("preco"));
-                System.out.println("Vendido por: " + rs.getString("farmaciaNome"));
+                System.out.println("Vendido por: " + rs.getString("farmacia"));
                 System.out.println("---------------------------------");
             }
 
@@ -673,8 +677,9 @@ public class Produtos {
             System.out.println("\nOpções do Carrinho:");
             if (existe) {
                 System.out.println("1. Remover item do carrinho");
+                System.out.println("2. Realizar Compra");
             }
-            System.out.println("2. Voltar ao Menu Principal");
+            System.out.println("3. Voltar ao Menu Principal");
 
             int opcao = 0;
             try {
@@ -690,6 +695,9 @@ public class Produtos {
                     }
                     break;
                 case 2:
+                    realizarCompra(sc, clienteId, totalGeral);
+                    return;
+                case 3:
                     System.out.println("Voltando ao menu...");
                     return; // Sai do loop 'while(true)' e do método
                 default:
@@ -755,4 +763,65 @@ public class Produtos {
             System.out.println("Erro ao remover do carrinho: " + e.getMessage());
         }
     }
+
+    private static void realizarCompra(Scanner sc, int clienteId, double totalGeral) {
+
+        int usuarioId = 0;
+
+        System.out.println("--- Realizar Compra ---");
+        System.out.println("Confirme seu endereço: ");
+
+        Endereco en = new Endereco();
+        en.exibirEnderecos("cliente", clienteId);
+
+        System.out.println("Deseja atualizar o endereço ? S / N");
+        String opcao = sc.nextLine().trim().toUpperCase();
+
+        if (opcao.equals("S")) {
+
+            String sqlBusca = "SELECT usuario_id FROM clientes WHERE id = ?";
+
+            try (Connection con = Conexao.getConnection();
+                 PreparedStatement stmt = con.prepareStatement(sqlBusca)) {
+
+                stmt.setInt(1, clienteId);
+                ResultSet rs = stmt.executeQuery();
+
+                if (rs.next()) {
+                    usuarioId = rs.getInt("usuario_id");
+                    Endereco.atualizarEndereco(usuarioId);
+                }
+
+            } catch (SQLException ex) {
+                throw new RuntimeException(ex);
+            }
+        }
+
+        System.out.println("Tem certeza que deseja realizar a compra ? S / N");
+        String opcao2 = sc.nextLine().trim().toUpperCase();
+
+        if (opcao2.equals("S")) {
+
+            String sqlDel = "DELETE FROM carrinho WHERE cliente_id = ?";
+
+            try (Connection con = Conexao.getConnection();
+                 PreparedStatement stmt = con.prepareStatement(sqlDel)) {
+
+                stmt.setInt(1, clienteId);
+
+                int linhasAfetadas = stmt.executeUpdate();  // ✔ correto
+
+                System.out.println("Compra no valor de R$ " + totalGeral + " finalizada com sucesso!");
+
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+
+        } else if (opcao2.equals("N")) {
+            System.out.println("Compra recusada!");
+        } else {
+            System.out.println("Opção inválida!");
+        }
+    }
+
 }

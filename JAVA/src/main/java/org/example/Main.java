@@ -111,7 +111,7 @@ public class Main {
                         Farmacia.exibirFarmacias();
                         break;
                     case 4:
-                        Endereco.exibirEnderecos("adm");
+                        Endereco.exibirEnderecos("adm", 0);
                         break;
                     case 5:
                         Produtos.exibirProdutos(sc, grupo, 0);
@@ -125,15 +125,15 @@ public class Main {
             }
         } else if (grupo.equals("cliente")) {
             // Loop do Cliente.
-            while (opcao != 6) {
+            while (opcao != 5) {
                 System.out.println("\nMENU CLIENTE:");
                 System.out.println("Escolha uma das opções: ");
                 System.out.println("1. Atualizar dados Pessoais");
                 System.out.println("2. Atualizar meu Endereço");
                 System.out.println("3. Ver Produtos (e Adicionar)");
                 System.out.println("4. Ver Meu Carrinho");
-                System.out.println("5. Gerenciar Formas de Pagamento");
-                System.out.println("6. Sair (Voltar à tela inicial)");
+                //System.out.println("5. Gerenciar Formas de Pagamento");
+                System.out.println("5. Sair (Voltar à tela inicial)");
 
                 try {
                     opcao = Integer.parseInt(sc.nextLine());
@@ -152,10 +152,12 @@ public class Main {
                     case 4:
                         Produtos.exibirCarrinho(sc, perfilId); // Chama o novo método
                         break;
+                        /*
                     case 5:
                         FormaPagamento.gerenciarFormasPagamento(sc, perfilId);
                         break;
-                    case 6:
+                        */
+                    case 5:
                         System.out.println("Fazendo logout...");
                         break;
                     default:
@@ -163,6 +165,7 @@ public class Main {
                 }
             }
         } else if (grupo.equals("farmacia")) {
+
             // Loop da Farmácia.
             while (opcao != 4) {
                 System.out.println("\nMENU FARMÁCIA:");
@@ -180,10 +183,6 @@ public class Main {
                     case 1:
                         Produtos.exibirProdutos(sc, grupo, perfilId);
                         break;
-                    // =================================================================
-                    // CORREÇÃO AQUI
-                    // Passa o 'perfilId', que é o ID da farmácia logada.
-                    // =================================================================
                     case 2:
                         Farmacia.atualizarFarmacia(sc, perfilId);
                         break;

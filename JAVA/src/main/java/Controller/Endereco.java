@@ -52,12 +52,19 @@ public class Endereco {
     }
 
 
-    public static void exibirEnderecos(String tipo){
+    public static void exibirEnderecos(String tipo, int perfilId){
         System.out.println("=== ENDEREÇOS ===");
         Scanner sc = new Scanner(System.in);
+        String sql = "";
+        if (perfilId == 0) {
+            sql = "SELECT * FROM enderecos;";
+        } else {
+            sql = "SELECT * FROM vw_enderecos WHERE cliente_id = ?";
+        }
         try (Connection con = Conexao.getConnection()){
-            String sql = "SELECT * FROM enderecos;";
+
             PreparedStatement stmt = con.prepareStatement(sql);
+            if (perfilId != 0) {stmt.setInt(1, perfilId);}
             ResultSet rs = stmt.executeQuery();
             while(rs.next()){
                 System.out.println("ID: "+rs.getString("id"));

@@ -13,7 +13,7 @@ import java.time.format.DateTimeParseException;
 
 public class Cliente {
 
-    private static String validarNumerosETamanho(String valor, int tamanhoMinimo, int tamanhoMaximo, String tipo) {
+    public static String validarNumerosETamanho(String valor, int tamanhoMinimo, int tamanhoMaximo, String tipo) {
         // Fazer a verificação de telefone e cpf unicos
         String sql = "SELECT * FROM clientes WHERE " + tipo + " = ?";
         try (Connection con = Conexao.getConnection();
