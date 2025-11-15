@@ -1,21 +1,45 @@
 package Controller;
 
-// Imports do MySQL (SQL)
-import Database.Conexao;
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 
-// --- Imports do MongoDB (NoSQL) ---
-import Database.ConexaoMongo;
-import com.mongodb.client.MongoDatabase;
 import org.bson.Document;
 // ------------------------------------
+
+import com.mongodb.client.MongoDatabase;
+
+// Imports do MySQL (SQL)
+import Database.Conexao;
+// --- Imports do MongoDB (NoSQL) ---
+import Database.ConexaoMongo;
 
 public class Usuario {
 
     private static boolean validarEmail(String email){
+        try {
+            Connection con = Conexao.getConnection();
+            String sql = "SELECT email FROM usuarios WHERE email = ?";
+            PreparedStatement stmt = con.prepareStatement(sql); 
+            stmt.setString(1, email);
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                System.out.println("Email já cadastrado.");
+                return false;
+            } else {
+                // Email não existe
+                return true;
+            }
+        } catch (SQLException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+
         if (email == null) return  false;
         email = email.trim();
         return !email.isEmpty() && email.contains("@") && email.indexOf('@') != 0 && email.indexOf('@') != email.length() - 1;
