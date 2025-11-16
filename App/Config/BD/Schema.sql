@@ -1,95 +1,361 @@
+DROP DATABASE IF EXISTS FarmaShop;
 CREATE DATABASE FarmaShop;
 USE FarmaShop;
--- Por enquanto, 2 tipos de usuários Cliente e Fornecedor (Farmácia)
+-- FAÇA ESTA FUNÇÃO PARA GERAR CÓDIGOS DO PRODUTO COM 7 DÍGITOS
+-- FUNÇÃO OBRIGATÓRIA: Regra Própria para Geração de IDs (UUID/GUID)
+DELIMITER //
+CREATE FUNCTION fn_gerar_id() RETURNS CHAR(7)
+DETERMINISTIC
+BEGIN
+RETURN UUID();
+END //
+DELIMITER ;
+
+-- =================================================================
+-- 2. TABELAS OBRIGATÓRIAS E ESTRUTURA BASE 
+-- =================================================================
+
+-- Tabela Grupos de Usuários 
+CREATE TABLE gruposUsuarios (
+id INT PRIMARY KEY,
+nome VARCHAR(50) UNIQUE NOT NULL,
+descricao VARCHAR(255)
+);
+INSERT INTO gruposUsuarios (id, nome, descricao) VALUES (2, 'cliente', 'acesso a páginas de clientes'),(3, 'farmacia' ,'acesso a todas as páginas, exceto de cartão'),(1,'adm' ,'acesso a todas as páginas');
+
+-- Tabela Usuários
 CREATE TABLE usuarios(
-	idUsuario INT PRIMARY KEY AUTO_INCREMENT,
-    tipo ENUM('cliente', 'farmacia') DEFAULT 'cliente',
-    situacao ENUM('ativo', 'inativo') DEFAULT 'ativo',
-    email VARCHAR(60) NOT NULL UNIQUE,
-    senha VARCHAR(255) NOT NULL, -- CRIPTOGRAFIA COM MD5
-    data_alteracao TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+id INT PRIMARY KEY AUTO_INCREMENT,
+situacao ENUM('ativo', 'inativo') DEFAULT 'ativo',
+email VARCHAR(60) NOT NULL UNIQUE,
+senha VARCHAR(255) NOT NULL,
+dataAlteracao TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
+-- CRIPTOGRAFIA DA SENHA
+DELIMITER //
+CREATE TRIGGER senha_login
+BEFORE INSERT 
+ON usuarios FOR EACH ROW 
+BEGIN
+SET NEW.senha = UPPER(MD5(NEW.senha));
+END 
+//
+DELIMITER ;
+
+INSERT INTO usuarios (email,senha) VALUES ('adm@','321'), ('cliente@','123'), ('farmacia@', '123');
+
+-- Tabela de Relacionamento 
+CREATE TABLE usuarioGrupo (
+usuario_id INT NOT NULL, 
+grupo_id INT NOT NULL,   
+PRIMARY KEY (usuario_Id, grupo_id),
+FOREIGN KEY (usuario_id) REFERENCES usuarios (id),
+FOREIGN KEY (grupo_id) REFERENCES gruposUsuarios (id)
+);
+INSERT INTO usuarioGrupo (usuario_id, grupo_id) VALUES (1, 1), (2, 2), (3, 3);
+
+-- Tabela para log de auditoria de segurança 
+CREATE TABLE logAlteracoesSenha (
+id VARCHAR(7) PRIMARY KEY,
+usuarioId INT NOT NULL,
+dataAlteracao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+ipOrigem VARCHAR(50), 
+FOREIGN KEY (usuarioId) REFERENCES usuarios (id)
+);
+
+-- Tabela Endereços
 CREATE TABLE enderecos(
-	idEndereco INT PRIMARY KEY AUTO_INCREMENT,
-	cep VARCHAR(9) UNIQUE NOT NULL, -- 00000-000
-    estado ENUM('AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO') NOT NULL,
-    cidade VARCHAR(60) NOT NULL,
-    rua VARCHAR(60) NOT NULL,
-    numero INT,
-    bairro VARCHAR(60),
-    complemento TEXT    
+id VARCHAR(7) PRIMARY KEY,
+cep VARCHAR(9) UNIQUE NOT NULL,
+estado ENUM('AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO') NOT NULL,
+cidade VARCHAR(60) NOT NULL,
+rua VARCHAR(60) NOT NULL,
+numero INT,
+bairro VARCHAR(60),
+complemento TEXT
 );
 
+-- Tabela Clientes
 CREATE TABLE clientes(
-	idCliente INT PRIMARY KEY AUTO_INCREMENT,
-    nome VARCHAR(60) NOT NULL,
-    cpf VARCHAR(12) UNIQUE NOT NULL, -- 000000000-00
-    telefone VARCHAR(14) UNIQUE NOT NULL, -- (00)90000-0000
-    data_nascimento DATE NOT NULL, -- verificar se é de maior
-    endereco_id INT,
-    usuario_id INT NOT NULL,
-    data_cadastro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (endereco_id) REFERENCES enderecos (idEndereco),
-    FOREIGN KEY (usuario_id) REFERENCES usuarios (idUsuario)
+id INT PRIMARY KEY AUTO_INCREMENT,
+nome VARCHAR(60) NOT NULL,
+cpf VARCHAR(12) UNIQUE NOT NULL,
+telefone VARCHAR(14) UNIQUE NOT NULL,
+data_nascimento DATE NOT NULL, 
+endereco_id VARCHAR(7),  
+usuario_id INT NOT NULL,  
+data_cadastro TIMESTAMP DEFAULT CURRENT_TIMESTAMP, 
+FOREIGN KEY (endereco_id) REFERENCES enderecos (id),
+FOREIGN KEY (usuario_id) REFERENCES usuarios (id)
 );
 
-CREATE TABLE cartao(
-	idCartao INT PRIMARY KEY AUTO_INCREMENT,
-	cliente_id INT NOT NULL,
-    nome_titular VARCHAR(100) NOT NULL,
-    bandeira ENUM('Visa','MasterCard','Elo','Amex','Hipercard','Outros') NOT NULL,
-    ultimos_digitos CHAR(4) NOT NULL,
-    validade_mes CHAR(2),
-    validade_ano CHAR(4) NOT NULL,
-    token_pagamento VARCHAR(255) NOT NULL, -- gerado pelo gateway de pagamento
-    data_cadastro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (cliente_id) REFERENCES clientes(idCliente)
+-- Tabela Cartão
+CREATE TABLE cartaos(
+id VARCHAR(7) PRIMARY KEY,
+clienteId INT NOT NULL, 
+nome_titular VARCHAR(100) NOT NULL, 
+bandeira ENUM('Visa','MasterCard','Elo','Amex','Hipercard','Outros') NOT NULL,
+ultimos_digitos CHAR(4) NOT NULL, 
+validade_mes CHAR(2),
+validade_ano CHAR(4) NOT NULL, 
+token_pagamento VARCHAR(255) NOT NULL, 
+dataCadastro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+FOREIGN KEY (clienteId) REFERENCES clientes(id)
 );
 
+-- Tabela Farmácias
 CREATE TABLE farmacias(
-	idFarmacia INT PRIMARY KEY AUTO_INCREMENT,
-    nome_juridico VARCHAR(150) NOT NULL, -- razao social
-	nome_fantasia VARCHAR(150) NOT NULL, -- nome comercial
-    cnpj VARCHAR(14) UNIQUE NOT NULL,
-    alvara_sanitario VARCHAR(50) NOT NULL, -- Registro obrigatório na Anvisa/Vigilância
-    responsavel_tecnico VARCHAR(60) NOT NULL, -- Nome do farmacêutico responsável
-    crf VARCHAR(20) NOT NULL, -- Registro do farmacêutico no Conselho de Farmácia
-    telefone VARCHAR(20) UNIQUE NOT NULL,
-    email VARCHAR(60) UNIQUE NOT NULL,
-    endereco_id INT NOT NULL,
-	usuario_id INT NOT NULL,
-    data_cadastro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (endereco_id) REFERENCES enderecos (idEndereco),
-    FOREIGN KEY (usuario_id) REFERENCES usuarios (idUsuario)
+id INT PRIMARY KEY AUTO_INCREMENT,
+nome_juridico VARCHAR(150) NOT NULL,   
+nome_fantasia VARCHAR(150) NOT NULL,   
+cnpj VARCHAR(14) UNIQUE NOT NULL,
+alvara_sanitario VARCHAR(50) NOT NULL, 
+responsavel_tecnico VARCHAR(60) NOT NULL, 
+crf VARCHAR(20) NOT NULL,
+telefone VARCHAR(20) UNIQUE NOT NULL,
+endereco_id VARCHAR(7) NOT NULL,
+usuario_id INT NOT NULL,
+dataCadastro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+FOREIGN KEY (endereco_id) REFERENCES enderecos (id),
+FOREIGN KEY (usuario_id) REFERENCES usuarios (id)
 );
 
+-- Tabela Categoria Produtos
 CREATE TABLE categoria_produtos(
-	idCategoria_produto INT PRIMARY KEY AUTO_INCREMENT,
-	nome VARCHAR(100) NOT NULL
+id INT PRIMARY KEY,
+nome VARCHAR(100) NOT NULL
 );
 
+INSERT INTO categoria_produtos(id, nome) VALUES (1, 'Cosméticos'), (2, 'Medicamento'), (3, 'Prod. Beleza'), (4, 'Prod. Higiene'), (5, 'Prod. Infantil'), (6, 'Prod. Saúde');
+
+-- Tabela Produtos
 CREATE TABLE produtos(
-	idProduto INT PRIMARY KEY AUTO_INCREMENT,
-    codigo VARCHAR(7) NOT NULL,
-    nome VARCHAR(100) NOT NULL,
-    descricao TEXT NOT NULL,
-    estoque INT NOT NULL,
-    promocao BOOLEAN DEFAULT FALSE,
-    preco DECIMAL(10, 2) NOT NULL,
-    data_alteracao TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    data_cadastro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-	categoria_id INT NOT NULL,
-    farmacia_id INT NOT NULL,
-	FOREIGN KEY (categoria_id) REFERENCES catedoria_produtos (idCategoria_produto),
-    FOREIGN KEY (farmacia_id) REFERENCES farmacias (idFarmacia)
+COD VARCHAR(7) primary key, -- Tem que gerar o código com a trigger
+nome VARCHAR(100) NOT NULL,
+descricao TEXT NOT NULL,
+estoque INT NOT NULL,
+promocao BOOLEAN DEFAULT FALSE,
+preco DECIMAL(10, 2) NOT NULL,
+dataAlteracao TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+dataCadastro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+categoria_id INT NOT NULL, 
+farmacia_id INT NOT NULL, 
+FOREIGN KEY (categoria_id) REFERENCES categoria_produtos (id),
+FOREIGN KEY (farmacia_id) REFERENCES farmacias (id)
 );
 
-CREATE TABLE imagem_produtos(
-	idImagem_produto INT PRIMARY KEY AUTO_INCREMENT,
-    produto_id INT NOT NULL,
-    url VARCHAR(255) NOT NULL,
-    pricipal BOOLEAN DEFAULT FALSE,
-    ordem INT DEFAULT 0,
-    FOREIGN KEY (produto_id) REFERENCES produtos (idProduto)
+-- Tabela de Favoritos
+CREATE TABLE prod_favoritos(
+cliente_id INT NOT NULL,
+produto_cod VARCHAR(7) NOT NULL,
+FOREIGN KEY (cliente_id) REFERENCES clientes(id),
+FOREIGN KEY (produto_cod) REFERENCES produtos(COD)
 );
+
+-- Tabela Imagem Produtos 
+CREATE TABLE imagem_produtos(
+id INT PRIMARY KEY,
+produto_cod VARCHAR(7) NOT NULL, 
+url VARCHAR(255) NOT NULL,
+pricipal BOOLEAN DEFAULT FALSE,
+ordem INT DEFAULT 0,
+FOREIGN KEY (produto_cod) REFERENCES produtos (COD)
+);
+
+-- Tabela Carrinho
+CREATE TABLE  carrinho (
+id INT PRIMARY KEY AUTO_INCREMENT, 
+cliente_id INT NOT NULL,
+produto_cod CHAR(7) NOT NULL,
+data_adicao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+FOREIGN KEY (cliente_id) REFERENCES clientes (id) ON DELETE CASCADE,
+FOREIGN KEY (produto_cod) REFERENCES produtos (COD) ON DELETE CASCADE
+);
+
+-- 3. TRIGGERS PARA GERAÇÃO DE ID 
+
+-- Trigger para Produtos
+DELIMITER //
+CREATE TRIGGER trg_gerar_idProdutos
+BEFORE INSERT ON produtos
+FOR EACH ROW
+BEGIN
+IF NEW.COD IS NULL OR NEW.COD = '' THEN
+SET NEW.COD = fn_gerar_id();
+END IF;
+END //
+DELIMITER ;
+
+-- Trigger para Cartão
+DELIMITER //
+CREATE TRIGGER trg_gerar_idCartao
+BEFORE INSERT ON cartaos
+FOR EACH ROW
+BEGIN
+IF NEW.id IS NULL OR NEW.id = '' THEN
+SET NEW.id = fn_gerar_id();
+END IF;
+END //
+DELIMITER ;
+
+-- Trigger para Endereços
+DELIMITER //
+CREATE TRIGGER trg_gerar_idEndereco
+BEFORE INSERT ON enderecos
+FOR EACH ROW
+BEGIN
+IF NEW.id IS NULL OR NEW.id = '' THEN
+SET NEW.id = fn_gerar_id();
+END IF;
+END //
+DELIMITER ;
+
+-- Trigger para log de alteração de senha
+DELIMITER //
+CREATE TRIGGER trg_gerar_idLog
+BEFORE INSERT ON logAlteracoesSenha
+FOR EACH ROW
+BEGIN
+IF NEW.id IS NULL OR NEW.id = '' THEN
+SET NEW.id = fn_gerar_id();
+END IF;
+END //
+DELIMITER ;
+
+-- 4. ÍNDICES (PARA DESEMPENHO)
+
+-- Índices ajustados para camelCase
+ALTER TABLE clientes ADD INDEX idx_cliente_endereco (endereco_id);
+ALTER TABLE farmacias ADD INDEX idx_farmacia_endereco (endereco_id);
+ALTER TABLE usuarios ADD INDEX idx_usuario_situacao (situacao);
+ALTER TABLE produtos ADD INDEX idx_produto_categoria_farmacia (categoria_id, farmacia_id);
+ALTER TABLE produtos ADD FULLTEXT INDEX ftidx_produto_nome (nome);
+
+-- 5. TRIGGERS ADICIONAIS (LÓGICA DE NEGÓCIO E AUDITORIA)
+
+-- TRIGGER 5: trg_validar_maioridade 
+DELIMITER //
+CREATE TRIGGER trg_validar_maioridade
+BEFORE INSERT ON clientes
+FOR EACH ROW
+BEGIN
+IF TIMESTAMPDIFF(YEAR, NEW.data_nascimento, CURDATE()) < 18 THEN
+SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'ERRO: O cadastro de clientes exige a maioridade (18 anos).';
+END IF;
+END //
+DELIMITER ;
+
+-- TRIGGER 6: trg_log_senha_usuario 
+DELIMITER //
+CREATE TRIGGER trg_log_senha_usuario
+AFTER UPDATE ON usuarios
+FOR EACH ROW
+BEGIN
+IF OLD.senha <> NEW.senha THEN
+INSERT INTO logAlteracoesSenha (usuario_id, ipOrigem)
+VALUES (NEW.id, 'DESCONHECIDO_VIA_TRIGGER');
+END IF;
+END //
+DELIMITER ;
+
+-- 6. PROCEDURES E VIEWS
+
+-- PROCEDURE: sp_atualizar_estoque
+DELIMITER //
+CREATE PROCEDURE sp_atualizar_estoque (
+IN p_produto_id CHAR(36),
+IN p_quantidadeVendida INT
+)
+BEGIN
+IF (SELECT estoque FROM produtos WHERE id = p_produto_id) >= p_quantidadeVendida THEN
+UPDATE produtos
+SET estoque = estoque - p_quantidadeVendida
+WHERE id = p_produto_id;
+ELSE
+SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'ERRO: Estoque insuficiente para o produto.';
+END IF;
+END //
+DELIMITER ;
+
+-- VIEW 1: vw_farmacias_ativas 
+DROP VIEW IF EXISTS vw_farmacias_ativas;
+CREATE VIEW vw_farmacias_ativas AS
+SELECT
+f.id, f.nome_fantasia, f.cnpj, f.telefone,
+e.rua, e.numero, e.cidade, e.estado
+FROM
+farmacias f
+JOIN enderecos e ON f.endereco_id = e.id
+JOIN usuarios u ON f.usuario_id = u.id
+WHERE u.situacao = 'ativo';
+
+-- VIEW 2: Calcular o Total do Carrinho 
+DROP VIEW IF EXISTS vw_total_carrinho;
+CREATE VIEW vw_total_carrinho AS
+SELECT
+c.cliente_id,
+p.nome AS produto_nome,
+COUNT(c.id) AS quantidade,
+p.preco,
+SUM(p.preco) AS valor_total_item
+FROM
+carrinho c
+JOIN
+produtos p ON c.produto_cod = p.COD
+GROUP BY
+c.cliente_id, c.produto_cod, p.nome, p.preco;
+
+-- VIEW 3: vw_produtos_em_promocao 
+DROP VIEW IF EXISTS vw_produtos_em_promocao;
+CREATE VIEW vw_produtos_em_promocao AS
+SELECT
+p.COD, p.nome AS produtoNome, p.preco,
+f.nome_fantasia AS farmaciaNome
+FROM
+produtos p
+JOIN farmacias f ON p.farmacia_id = f.id
+WHERE p.promocao = TRUE;
+
+-- VIEW 4: vw_usuarios
+DROP VIEW IF EXISTS vw_usuarios;
+CREATE VIEW vw_usuarios AS 
+SELECT 
+u.id,
+u.email,
+u.senha,
+g.nome AS grupo,
+u.situacao
+FROM usuarioGrupo ug 
+LEFT JOIN usuarios u ON u.id = ug.usuario_id
+LEFT JOIN gruposUsuarios g ON g.id = ug.grupo_id;
+
+-- VIEW 5
+DROP VIEW  IF EXISTS vw_enderecos;
+CREATE VIEW vw_enderecos AS 
+SELECT 
+e.*,
+c.id AS cliente_id
+FROM clientes c
+LEFT JOIN enderecos e ON c.endereco_id = e.id;
+
+-- 7. SEGURANÇA: CRIAÇÃO DE USUÁRIOS E CONTROLE DE ACESSO
+
+-- Nível 1: Administrador (DBA)
+DROP USER IF EXISTS 'admin_farma'@'localhost';
+CREATE USER 'admin_farma'@'localhost' IDENTIFIED BY 'SenhaForteAdminFarma2025';
+GRANT ALL PRIVILEGES ON FarmaShop.* TO 'admin_farma'@'localhost' WITH GRANT OPTION;
+
+-- Nível 2: Aplicativo Web
+DROP USER IF EXISTS 'app_web'@'%';
+CREATE USER 'app_web'@'%' IDENTIFIED BY 'SenhaSeguraParaAplicacao789';
+GRANT SELECT, INSERT, UPDATE, DELETE ON FarmaShop.* TO 'app_web'@'%';
+GRANT EXECUTE ON *.* TO 'app_web'@'%';
+
+-- Nível 3: Relatórios (BI)
+DROP USER IF EXISTS 'relatorio_user'@'%';
+CREATE USER 'relatorio_user'@'%' IDENTIFIED BY 'SenhaRelatorioSomenteLeitura101';
+GRANT SELECT ON FarmaShop.* TO 'relatorio_user'@'%';
+
+FLUSH PRIVILEGES;
+
