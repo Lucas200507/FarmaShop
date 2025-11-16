@@ -12,9 +12,9 @@ import Controller.Farmacia;
 import Controller.Endereco;
 import Controller.Usuario;
 import Controller.Produtos;
-import Controller.FormaPagamento;
+
 import Database.Conexao;
-import org.example.Login;
+
 
 public class Main {
     public static void main(String[] args) {
@@ -38,12 +38,6 @@ public class Main {
         }
     }
 
-    /**
-     * Busca o ID da tabela 'clientes' ou 'farmacias' com base no usuario_id.
-     * @param grupo O grupo do usuário ("cliente" ou "farmacia")
-     * @param usuarioId O ID da tabela 'usuarios'
-     * @return O ID do perfil (cliente_id ou farmacia_id), ou 0 se for ADM ou não encontrado.
-     */
     public static int getPerfilId(String grupo, int usuarioId) {
         String sql;
         int id = 0;
@@ -73,12 +67,6 @@ public class Main {
         return id;
     }
 
-    /**
-     * Exibe o menu principal com base no perfil do usuário.
-     * @param grupo O nome do grupo ("adm", "cliente", "farmacia")
-     * @param usuarioId O ID da tabela 'usuarios' (para atualizar dados de usuário)
-     * @param perfilId O ID da tabela 'clientes' ou 'farmacias' (para ações de perfil)
-     */
     public static void mostrarMenu(String grupo, int usuarioId, int perfilId){
         Scanner sc = new Scanner(System.in);
         int opcao = 0;
