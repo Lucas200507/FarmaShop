@@ -22,12 +22,16 @@ public class Conexao {
             throw new RuntimeException("Driver MySQL (mysql-connector-j) não encontrado! Verifique seu pom.xml", e);
         }
     }
-
-    // lucas
-
-    private static final String url = "jdbc:mysql://127.0.0.1:3306/FarmaShop";
-    private static final String user = "root";
-    private static final String pss = "";
+    /*
+        // lucas
+        private static final String url = "jdbc:mysql://127.0.0.1:3306/FarmaShop";
+        private static final String user = "root";
+        private static final String pss = "";
+    */
+    // Usuário app_web
+    private static final String url  = "jdbc:mysql://127.0.0.1:3306/FarmaShop";
+    private static final String user = "app_web";
+    private static final String pss  = "SenhaSeguraParaAplicacao789";
 
 /*
     // catolica
