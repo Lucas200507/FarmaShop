@@ -15,7 +15,7 @@ public class Conexao {
     // lucas
 
     private static final String url = "jdbc:mysql://127.0.0.1:3306/FarmaShop";
-    private static final String user = "root";
+    private static final String user = "app_web";
     private static final String pss = "";
 
 /*
