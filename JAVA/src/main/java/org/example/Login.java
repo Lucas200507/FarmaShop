@@ -4,17 +4,12 @@ import Controller.Cliente;
 import Controller.Endereco;
 import Controller.Farmacia;
 import Controller.Usuario;
-import Database.Conexao;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import static com.mongodb.client.model.Filters.*;
 import org.bson.Document;
 
 import java.security.MessageDigest;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.Scanner;
 
 public class Login {
@@ -49,7 +44,7 @@ public class Login {
             sc.nextLine();
             switch (opcao){
                 case 1:
-                    logado = realizarLogin(sc);
+                    logado = realizarLoginMongo(sc);
                     break;
                 case 2:
                     idUsuario = u.inserirUsuario(sc, 2); // grupo 2 = cliente
@@ -67,18 +62,18 @@ public class Login {
         return logado;
     }
 
-    public boolean realizarLogin(Scanner sc) {
+/*    public boolean realizarLogin(Scanner sc) {
         String usuario;
         String senha;
         boolean logado = false;
         do {
 
-            System.out.print("Usuário: ");
+            System.out.print("Usuário: (Aperte Enter para voltar)\n");
             usuario = sc.nextLine().trim();
             if (usuario.isEmpty() || usuario.equals("")) {
                 return false;
             }
-            System.out.print("Senha: ");
+            System.out.print("Senha: (Aperte Enter para voltar)\n");
             senha = sc.nextLine().trim();
             if (senha.isEmpty() || senha.equals("")) {
                 return false;
@@ -107,7 +102,7 @@ public class Login {
             }
         } while (!logado);
         return logado;
-    }
+    }*/
 
     public boolean realizarLoginMongo(Scanner sc) {
         boolean logado = false;
@@ -156,7 +151,7 @@ public class Login {
     }
 
     // Função auxiliar para gerar MD5 maiúsculo
-    private static String md5Upper(String input) {
+    public static String md5Upper(String input) {
         try {
             MessageDigest md = MessageDigest.getInstance("MD5");
             byte[] digest = md.digest(input.getBytes());
@@ -167,4 +162,4 @@ public class Login {
             throw new RuntimeException(e);
         }
     }
-}
+

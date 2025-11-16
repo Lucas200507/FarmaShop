@@ -1,10 +1,14 @@
 package Controller;
 
 import Database.Conexao;
+import com.mysql.cj.x.protobuf.MysqlxPrepare;
+
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
+import Controller.Endereco;
+// Removido: import Controller.Cliente;
 
 public class Produtos {
 
@@ -28,6 +32,52 @@ public class Produtos {
             return null; // Inválido
         }
     }
+
+    /**
+     * Exibe produtos. O menu de ações muda com base no tipo de usuário.
+     * @param sc Scanner
+     * @param grupoNome O nome do grupo do usuário logado ("cliente", "farmacia", "adm")
+     * @param perfilId O ID do Cliente (cliente_id) ou da Farmácia (farmacia_id)
+     */
+    public static void exibirProdutos(Scanner sc, String grupoNome, int perfilId) {
+        System.out.println("=== CATÁLOGO DE PRODUTOS ===");
+
+        // Query que só mostra produtos de farmácias ativas
+        String sql = """
+            SELECT p.COD, p.nome, p.descricao, p.preco, p.estoque, 
+                   c.nome AS categoria, f.nome_fantasia AS farmacia, p.dataAlteracao
+            FROM produtos p
+            JOIN categoria_produtos c ON p.categoria_id = c.id
+            JOIN farmacias f ON p.farmacia_id = f.id
+            JOIN usuarios u ON f.usuario_id = u.id
+            WHERE u.situacao = 'ativo' 
+            ORDER BY p.nome;
+        """;
+
+        try (Connection con = Conexao.getConnection();
+             PreparedStatement stmt = con.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
+
+            boolean existe = false;
+            while (rs.next()) {
+                existe = true;
+                System.out.println("ID (COD): " + rs.getString("COD"));
+                System.out.println("Nome: " + rs.getString("nome"));
+                System.out.println("Descrição: " + rs.getString("descricao"));
+                System.out.println("Preço: R$ " + rs.getDouble("preco"));
+                System.out.println("Estoque: " + rs.getInt("estoque"));
+                System.out.println("Categoria: " + rs.getString("categoria"));
+                System.out.println("Farmácia: " + rs.getString("farmacia"));
+                System.out.println("Última Alteração: " + rs.getTimestamp("dataAlteracao"));
+                System.out.println("============================================");
+            }
+            if (!existe) System.out.println("Nenhum produto cadastrado.");
+
+        } catch (SQLException e) {
+            System.out.println("Erro ao exibir produtos: " + e.getMessage());
+            return;
+        }
+
         System.out.println("\nDigite a opção que preferir:");
 
         // --- MENU DINÂMICO BASEADO NO GRUPO ---
@@ -40,6 +90,7 @@ public class Produtos {
         if (grupoNome.equals("cliente")) {
             System.out.println("5. Adicionar produto aos favoritos");
             System.out.println("6. Ver meus favoritos");
+            System.out.println("7. Adicionar produto ao carrinho"); // <-- Feature do Colega
         }
 
         System.out.println("4. Voltar ao menu principal");
@@ -51,18 +102,6 @@ public class Produtos {
             System.out.println("Opção inválida.");
             return;
         }
-        else {
-            System.out.println("1. Inserir novo produto");
-            System.out.println("2. Atualizar produto");
-            System.out.println("3. Deletar produto");
-            System.out.println("4. Voltar");
-
-            try {
-                opcao = Integer.parseInt(sc.nextLine());
-            } catch (Exception ex) {
-                System.out.println("Opção inválida.");
-                return;
-            }
 
         switch (opcao) {
             // Opções da Farmácia/ADM
@@ -107,11 +146,30 @@ public class Produtos {
                     System.out.println("Acesso negado.");
                 }
                 break;
+            // =================================================================
+            // CASE 7 (CARRINHO) CORRIGIDO
+            // =================================================================
+            case 7:
+                if (grupoNome.equals("cliente")) {
+
+                    // CORREÇÃO:
+                    // Não precisamos chamar 'getClienteIdByUsuarioId'.
+                    // O 'perfilId' que o Main.java nos passou JÁ É o cliente_id.
+                    int clienteId = perfilId;
+
+                    if (clienteId > 0) {
+                        adicionarAoCarrinho(sc, clienteId);
+                    } else {
+                        System.out.println("ERRO: Usuário logado (" + perfilId + ") não possui cadastro completo na tabela CLIENTES.");
+                    }
+
+                } else {
+                    System.out.println("Acesso negado.");
+                }
+                break;
             default:
                 System.out.println("Opção inválida.");
         }
-
-
     }
 
     /**
@@ -156,7 +214,7 @@ public class Produtos {
 
             int categoriaId = 0;
             do {
-                System.out.print("ID da Categoria:\n 1-Cosméticos\n 2-Medicamento\n 3-Prod. Beleza\n 4-Prod. Higiene\n 5-Prod. Infantil\n 6-Prod. Saúde\n");
+                System.out.print("ID da Categoria (1-Cosméticos, 2-Medicamento, ...): ");
                 try {
                     categoriaId = Integer.parseInt(sc.nextLine());
                     if (categoriaId <= 0) System.out.println("ERRO: ID da categoria deve ser positivo.");
@@ -167,7 +225,7 @@ public class Produtos {
             } while (categoriaId <= 0);
 
 
-            if (farmaciaId == 0) {
+            if (farmaciaId == 0) { // Se for ADM, pergunta qual farmácia
                 do {
                     System.out.print("ID da Farmácia (ADMIN): ");
                     try {
@@ -351,10 +409,18 @@ public class Produtos {
                 return;
             }
 
-            // O SQL agora usa 'ON DELETE CASCADE' para 'prod_favoritos' e 'imagem_produtos'
-            // então não precisamos deletar deles manualmente.
-            // Apenas o delete principal é necessário.
+            // O SQL (Consolidado) usa 'ON DELETE CASCADE' para 'prod_favoritos'
+            // e 'imagem_produtos'. Mas NÃO para 'carrinho'.
 
+            // 1. Deleta do carrinho PRIMEIRO
+            String sqlCart = "DELETE FROM carrinho WHERE produto_cod = ?";
+            try (PreparedStatement stmtCart = con.prepareStatement(sqlCart)) {
+                stmtCart.setString(1, cod);
+                stmtCart.executeUpdate();
+                // Não precisa de msg de sucesso, apenas limpa
+            }
+
+            // 2. Agora deleta o produto principal
             String sqlProd = "DELETE FROM produtos WHERE COD = ?";
             try (PreparedStatement stmtProd = con.prepareStatement(sqlProd)) {
                 stmtProd.setString(1, cod);
@@ -365,7 +431,6 @@ public class Produtos {
 
         } catch (SQLException e) {
             System.out.println("Erro ao deletar produto: " + e.getMessage());
-            System.out.println("Verifique se este produto não está associado a outras tabelas (ex: pedidos).");
         }
     }
 
@@ -376,29 +441,29 @@ public class Produtos {
      */
     public static void adicionarFavorito(Scanner sc, int clienteId) {
         System.out.println("=== ADICIONAR FAVORITO ===");
+
         System.out.print("Digite o COD do produto que deseja favoritar: ");
         String produtoCod = sc.nextLine();
 
-        // O SQL agora tem uma Primary Key (cliente_id, produto_cod)
-        String sql = "INSERT INTO prod_favoritos (cliente_id, produto_cod) VALUES (?, ?)";
+        String sql1 = "SELECT * FROM produtos WHERE COD = ?";
 
-        try (Connection con = Conexao.getConnection();
-             PreparedStatement stmt = con.prepareStatement(sql)) {
-
-            stmt.setInt(1, clienteId);
-            stmt.setString(2, produtoCod);
-            stmt.executeUpdate();
-
-            System.out.println("Produto " + produtoCod + " adicionado aos favoritos!");
-
-        } catch (SQLException e) {
-            if (e.getErrorCode() == 1062) { // Código de erro para "Duplicate entry"
-                System.out.println("Erro: Este produto já está nos seus favoritos.");
-            } else if (e.getErrorCode() == 1452) { // Código de erro para "Foreign key constraint fails"
-                System.out.println("Erro: Produto com COD '" + produtoCod + "' não encontrado.");
+        try {
+            Connection con = Conexao.getConnection();
+            PreparedStatement stmt1 = con.prepareStatement(sql1);
+            stmt1.setString(1, produtoCod);
+            ResultSet rs1 = stmt1.executeQuery();
+            if(rs1.next()){
+                String sql = "INSERT INTO prod_favoritos (cliente_id, produto_cod) VALUES (?, ?)";
+                PreparedStatement stmt = con.prepareStatement(sql);
+                stmt.setInt(1, clienteId);
+                stmt.setString(2, produtoCod);
+                stmt.executeUpdate();
+                System.out.println("Produto " + produtoCod + " adicionado aos favoritos!");
             } else {
-                System.out.println("Erro ao adicionar favorito: " + e.getMessage());
+                System.out.println("Erro: Produto com COD '" + produtoCod + "' não encontrado.");
             }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -408,8 +473,8 @@ public class Produtos {
     public static void exibirFavoritos(int clienteId) {
         System.out.println("=== MEUS FAVORITOS ===");
 
-        // Usando a VIEW 'vw_favoritos' (que está no seu SQL)
-        String sql = "SELECT COD, produto, preco, farmacia FROM vw_favoritos WHERE cliente_id =?";
+        // Usando a VIEW 'vw_favoritos' (que está no seu SQL Consolidado)
+        String sql = "SELECT * FROM vw_favoritos WHERE cliente_id = ?";
 
         try (Connection con = Conexao.getConnection();
              PreparedStatement stmt = con.prepareStatement(sql)) {
@@ -418,23 +483,345 @@ public class Produtos {
             ResultSet rs = stmt.executeQuery();
 
             boolean existe = false;
+            System.out.println("---------------------------------");
             while (rs.next()) {
                 existe = true;
-                System.out.println("---------------------------------");
-                // CORREÇÃO: A coluna na vw_favoritos chama-se 'COD'
                 System.out.println("COD: " + rs.getString("COD"));
-                System.out.println("Produto: " + rs.getString("produto"));
+                System.out.println("Nome: " + rs.getString("produto"));
                 System.out.println("Preço: R$ " + rs.getDouble("preco"));
                 System.out.println("Vendido por: " + rs.getString("farmacia"));
+                System.out.println("---------------------------------");
             }
-            System.out.println("---------------------------------");
 
             if (!existe) {
                 System.out.println("Você ainda não tem produtos favoritos.");
             }
+            System.out.println("---------------------------------");
 
         } catch (SQLException e) {
             System.out.println("Erro ao exibir favoritos: " + e.getMessage());
         }
     }
+
+    // =================================================================
+    // MÉTODOS DO CARRINHO (DO ARQUIVO DO COLEGA)
+    // =================================================================
+
+    /**
+     * Adiciona itens ao carrinho.
+     */
+    public static void adicionarAoCarrinho(Scanner sc, int clienteId) {
+        System.out.println("=== ADICIONAR AO CARRINHO ===");
+
+        // 1. Exibir a lista de produtos (para que o usuário possa escolher)
+        exibirTodosProdutosSimples();
+
+        try (Connection con = Conexao.getConnection()) {
+
+            System.out.print("Digite o COD do produto que deseja adicionar ao carrinho: ");
+            String produtoCod = sc.nextLine();
+
+            int quantidade = 0;
+            do {
+                System.out.print("Digite a quantidade: ");
+                try {
+                    quantidade = Integer.parseInt(sc.nextLine());
+                    if (quantidade <= 0) System.out.println("ERRO: A quantidade deve ser maior que zero.");
+                } catch (NumberFormatException e) {
+                    System.out.println("ERRO: Valor inválido. Use apenas números inteiros.");
+                    quantidade = 0;
+                }
+            } while (quantidade <= 0);
+
+            // 2. Verificar se o produto existe e se há estoque suficiente
+            int estoqueDisponivel = 0;
+            String sqlCheck = "SELECT estoque FROM produtos WHERE COD = ?";
+            try (PreparedStatement psCheck = con.prepareStatement(sqlCheck)) {
+                psCheck.setString(1, produtoCod);
+                ResultSet rsCheck = psCheck.executeQuery();
+                if (rsCheck.next()) {
+                    estoqueDisponivel = rsCheck.getInt("estoque");
+                } else {
+                    System.out.println("Erro: Produto com COD '" + produtoCod + "' não encontrado.");
+                    return;
+                }
+            }
+
+            if (estoqueDisponivel < quantidade) {
+                System.out.println("ERRO: Estoque insuficiente. Disponível: " + estoqueDisponivel);
+                return;
+            }
+
+            // 3. Inserir N linhas na tabela carrinho
+            String sqlInsert = "INSERT INTO carrinho (cliente_id, produto_cod) VALUES (?, ?)";
+            try (PreparedStatement stmt = con.prepareStatement(sqlInsert)) {
+
+                int sucesso = 0;
+                // O 'for' insere uma linha por item (como no arquivo do colega)
+                for (int i = 0; i < quantidade; i++) {
+                    stmt.setInt(1, clienteId);
+                    stmt.setString(2, produtoCod);
+                    stmt.addBatch();
+                    sucesso++;
+                }
+
+                stmt.executeBatch(); // Executa o lote de inserts
+
+                System.out.println(sucesso + " unidade(s) do produto " + produtoCod + " adicionada(s) ao carrinho!");
+            }
+
+            // 4. Reduzir o estoque (usando a PROCEDURE sp_atualizar_estoque)
+            // Esta é uma forma mais segura de atualizar o estoque.
+            String sqlUpdateStock = "{CALL sp_atualizar_estoque(?, ?)}";
+            try(CallableStatement cs = con.prepareCall(sqlUpdateStock)){
+                cs.setString(1, produtoCod);
+                cs.setInt(2, quantidade);
+                cs.execute();
+            }
+
+        } catch (SQLException e) {
+            System.out.println("Erro ao adicionar produto ao carrinho: " + e.getMessage());
+            if (e.getErrorCode() == 1452) {
+                System.out.println("Verifique se o COD do produto está correto.");
+            }
+        }
+    }
+
+    /**
+     * Helper para mostrar produtos para o carrinho.
+     */
+    private static void exibirTodosProdutosSimples() {
+        String sql = """
+            SELECT p.COD, p.nome, p.preco, p.estoque, f.nome_fantasia AS farmacia
+            FROM produtos p
+            JOIN farmacias f ON p.farmacia_id = f.id
+            JOIN usuarios u ON f.usuario_id = u.id
+            WHERE u.situacao = 'ativo' AND p.estoque > 0
+            ORDER BY p.nome;
+            """;
+
+        try (Connection con = Conexao.getConnection();
+             PreparedStatement stmt = con.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
+
+            System.out.println("--- Produtos Disponíveis (Estoque > 0) ---");
+            boolean existe = false;
+            while (rs.next()) {
+                existe = true;
+                System.out.printf("COD: %s | Nome: %s | Preço: R$ %.2f | Estoque: %d | Farmácia: %s\n",
+                        rs.getString("COD"),
+                        rs.getString("nome"),
+                        rs.getDouble("preco"),
+                        rs.getInt("estoque"),
+                        rs.getString("farmacia"));
+            }
+            if (!existe) System.out.println("Nenhum produto disponível no momento.");
+            System.out.println("------------------------------------------");
+
+        } catch (SQLException e) {
+            System.out.println("Erro ao listar produtos: " + e.getMessage());
+        }
+    }
+
+    // =================================================================
+    // NOVOS MÉTODOS: Visualizar e Remover do Carrinho
+    // =================================================================
+
+    /**
+     * Exibe o carrinho de compras atual do cliente como um menu interativo.
+     * @param clienteId O ID do cliente logado.
+     */
+    public static void exibirCarrinho(Scanner sc, int clienteId) {
+        String sql = "SELECT * FROM vw_total_carrinho WHERE cliente_id = ?";
+        double totalGeral = 0.0;
+        boolean existe = false;
+
+        while (true) { // Loop do menu do carrinho
+            totalGeral = 0.0; // Reseta o total a cada exibição
+            existe = false;
+
+            System.out.println("\n=== MEU CARRINHO DE COMPRAS ===");
+            try (Connection con = Conexao.getConnection();
+                 PreparedStatement stmt = con.prepareStatement(sql)) {
+
+                stmt.setInt(1, clienteId);
+                ResultSet rs = stmt.executeQuery();
+
+                System.out.println("---------------------------------");
+                while (rs.next()) {
+                    existe = true;
+                    String produtoNome = rs.getString("produto_nome");
+                    int quantidade = rs.getInt("quantidade");
+                    double precoUnit = rs.getDouble("preco");
+                    double totalItem = rs.getDouble("valor_total_item");
+
+                    System.out.printf("Produto: %s\n", produtoNome);
+                    System.out.printf("  Qtd: %d x R$ %.2f = R$ %.2f\n", quantidade, precoUnit, totalItem);
+                    System.out.println("---------------------------------");
+
+                    totalGeral += totalItem;
+                }
+
+                if (existe) {
+                    System.out.printf("TOTAL GERAL: R$ %.2f\n", totalGeral);
+                } else {
+                    System.out.println("Seu carrinho está vazio.");
+                }
+                System.out.println("---------------------------------");
+
+            } catch (SQLException e) {
+                System.out.println("Erro ao exibir o carrinho: " + e.getMessage());
+            }
+
+            // Sub-menu do Carrinho
+            System.out.println("\nOpções do Carrinho:");
+            if (existe) {
+                System.out.println("1. Remover item do carrinho");
+                System.out.println("2. Realizar Compra");
+            }
+            System.out.println("3. Voltar ao Menu Principal");
+
+            int opcao = 0;
+            try {
+                opcao = Integer.parseInt(sc.nextLine());
+            } catch (NumberFormatException e) { opcao = 0; }
+
+            switch (opcao) {
+                case 1:
+                    if (existe) {
+                        removerDoCarrinho(sc, clienteId);
+                    } else {
+                        System.out.println("Opção inválida.");
+                    }
+                    break;
+                case 2:
+                    realizarCompra(sc, clienteId, totalGeral);
+                    return;
+                case 3:
+                    System.out.println("Voltando ao menu...");
+                    return; // Sai do loop 'while(true)' e do método
+                default:
+                    System.out.println("Opção inválida.");
+            }
+        }
+    }
+
+    /**
+     * Remove uma quantidade N de um produto do carrinho e devolve ao estoque.
+     * @param sc Scanner
+     * @param clienteId ID do cliente
+     */
+    private static void removerDoCarrinho(Scanner sc, int clienteId) {
+        System.out.println("--- Remover Item do Carrinho ---");
+        System.out.print("Digite o COD do produto que deseja remover: ");
+        String produtoCod = sc.nextLine();
+
+        int quantidadeRemover = 0;
+        do {
+            System.out.print("Digite a QUANTIDADE a remover: ");
+            try {
+                quantidadeRemover = Integer.parseInt(sc.nextLine());
+                if (quantidadeRemover <= 0) System.out.println("ERRO: A quantidade deve ser maior que zero.");
+            } catch (NumberFormatException e) {
+                System.out.println("ERRO: Valor inválido. Use apenas números inteiros.");
+                quantidadeRemover = 0;
+            }
+        } while (quantidadeRemover <= 0);
+
+        // O 'carrinho' armazena N linhas. Para remover 3, deletamos 3 linhas.
+        String sqlDelete = "DELETE FROM carrinho WHERE cliente_id = ? AND produto_cod = ? LIMIT ?";
+        // A sp_atualizar_estoque subtrai. Passamos um negativo para somar de volta.
+        String sqlRestock = "{CALL sp_atualizar_estoque(?, ?)}";
+
+        try (Connection con = Conexao.getConnection();
+             PreparedStatement stmtDelete = con.prepareStatement(sqlDelete);
+             CallableStatement csRestock = con.prepareCall(sqlRestock)) {
+
+            // 1. Deletar N itens do carrinho
+            stmtDelete.setInt(1, clienteId);
+            stmtDelete.setString(2, produtoCod);
+            stmtDelete.setInt(3, quantidadeRemover);
+            int rowsAffected = stmtDelete.executeUpdate(); // Quantos itens foram realmente removidos
+
+            if (rowsAffected == 0) {
+                System.out.println("Produto não encontrado no carrinho ou COD incorreto.");
+                return;
+            }
+
+            if (rowsAffected < quantidadeRemover) {
+                System.out.println("Aviso: Você tentou remover " + quantidadeRemover + ", mas só havia " + rowsAffected + " no carrinho.");
+            }
+
+            // 2. Devolver os itens removidos (rowsAffected) ao estoque
+            csRestock.setString(1, produtoCod);
+            csRestock.setInt(2, -rowsAffected); // Passa um negativo (ex: -3)
+            csRestock.execute();
+
+            System.out.println(rowsAffected + " unidade(s) de " + produtoCod + " removida(s) do carrinho e devolvida(s) ao estoque.");
+
+        } catch (SQLException e) {
+            System.out.println("Erro ao remover do carrinho: " + e.getMessage());
+        }
+    }
+
+    private static void realizarCompra(Scanner sc, int clienteId, double totalGeral) {
+
+        int usuarioId = 0;
+
+        System.out.println("--- Realizar Compra ---");
+        System.out.println("Confirme seu endereço: ");
+
+        Endereco en = new Endereco();
+        en.exibirEnderecos("cliente", clienteId);
+
+        System.out.println("Deseja atualizar o endereço ? S / N");
+        String opcao = sc.nextLine().trim().toUpperCase();
+
+        if (opcao.equals("S")) {
+
+            String sqlBusca = "SELECT usuario_id FROM clientes WHERE id = ?";
+
+            try (Connection con = Conexao.getConnection();
+                 PreparedStatement stmt = con.prepareStatement(sqlBusca)) {
+
+                stmt.setInt(1, clienteId);
+                ResultSet rs = stmt.executeQuery();
+
+                if (rs.next()) {
+                    usuarioId = rs.getInt("usuario_id");
+                    Endereco.atualizarEndereco(usuarioId);
+                }
+
+            } catch (SQLException ex) {
+                throw new RuntimeException(ex);
+            }
+        }
+
+        System.out.println("Tem certeza que deseja realizar a compra ? S / N");
+        String opcao2 = sc.nextLine().trim().toUpperCase();
+
+        if (opcao2.equals("S")) {
+
+            String sqlDel = "DELETE FROM carrinho WHERE cliente_id = ?";
+
+            try (Connection con = Conexao.getConnection();
+                 PreparedStatement stmt = con.prepareStatement(sqlDel)) {
+
+                stmt.setInt(1, clienteId);
+
+                int linhasAfetadas = stmt.executeUpdate();  // ✔ correto
+
+                System.out.println("Compra no valor de R$ " + totalGeral + " finalizada com sucesso!");
+
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+
+        } else if (opcao2.equals("N")) {
+            System.out.println("Compra recusada!");
+        } else {
+            System.out.println("Opção inválida!");
+        }
+    }
+
 }

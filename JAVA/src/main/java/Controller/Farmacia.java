@@ -88,7 +88,7 @@ public class Farmacia {
                 int idFarmacia = f.inserirFarmacia(sc, 0, "0");
                 break;
             case 2:
-                atualizarFarmacia(sc);
+                atualizarFarmacia(sc, 0);
                 break;
             case 3:
                 desativarFarmacia(sc); // Usando soft-delete
@@ -151,7 +151,7 @@ public class Farmacia {
         if (idEndereco.equals("0")) {
             boolean valido = false;
             System.out.println("\n--- Seleção de Endereço ---");
-            Endereco.exibirEnderecos(null); // Apenas lista os endereços
+            Endereco.exibirEnderecos(null, 0); // Apenas lista os endereços
             do{
                 System.out.println("Escolha um ID de endereço válido (ex: 4a2b3c1):");
                 idEndereco = sc.nextLine();
@@ -229,10 +229,10 @@ public class Farmacia {
 
             String crfValidado;
             do {
-            System.out.println("Digite o CRF do responsável:");
-            String crf = sc.nextLine();
-            crfValidado = validarNumero(crf, 5, 5);
-            if (crfValidado == null) System.out.println("CRF inválido.");
+                System.out.println("Digite o CRF do responsável:");
+                String crf = sc.nextLine();
+                crfValidado = validarNumero(crf, 5, 5);
+                if (crfValidado == null) System.out.println("CRF inválido.");
             } while (crfValidado == null);
 
             String telefoneValidado;
@@ -278,152 +278,151 @@ public class Farmacia {
         return idFarmacia;
     }
 
-    /**
-     * Atualiza uma farmácia. Agora é PÚBLICO para ser chamado pelo Main.
-     */
-    public static void atualizarFarmacia(Scanner sc) {
+    public static void atualizarFarmacia(Scanner sc, int farmaciaId) {
+
         try (Connection con = Conexao.getConnection()) {
-            System.out.println("Digite o ID da farmácia que deseja atualizar: ");
-            int id = Integer.parseInt(sc.nextLine());
 
-            String sel = "SELECT * FROM farmacias WHERE id = ?";
-            try (PreparedStatement selStmt = con.prepareStatement(sel)) {
-                selStmt.setInt(1, id);
-                ResultSet rs = selStmt.executeQuery();
-                if (!rs.next()) {
-                    System.out.println("Farmácia não encontrada.");
-                    return;
+            // ============================================================
+            // 1) SE farmáciaId == 0 → LISTA FARMÁCIAS PARA ESCOLHER
+            // ============================================================
+            if (farmaciaId == 0) {
+
+                System.out.println("--- Seleção de Farmácia ---");
+
+                String sqlList = "SELECT id, nome_fantasia FROM farmacias";
+
+                try (PreparedStatement stmt = con.prepareStatement(sqlList);
+                     ResultSet rs = stmt.executeQuery()) {
+
+                    boolean existe = false;
+
+                    while (rs.next()) {
+                        existe = true;
+                        System.out.println("ID: " + rs.getInt("id") +
+                                " | Nome Fantasia: " + rs.getString("nome_fantasia"));
+                    }
+
+                    if (!existe) {
+                        System.out.println("Nenhuma farmácia encontrada.");
+                        return;
+                    }
+
                 }
 
-                String nomeJuridicoAtual = rs.getNString("nome_juridico");
-                String nomeFantasiaAtual = rs.getString("nome_fantasia");
-                String cnpjAtual = rs.getString("cnpj");
-                String alvaraAtual = rs.getString("alvara_sanitario");
-                String responsavelAtual = rs.getString("responsavel_tecnico");
-                String crfAtual = rs.getString("crf");
-                String telefoneAtual = rs.getString("telefone");
-
-                // CORREÇÃO: endereco_id é VARCHAR(7)
-                String enderecoAtual = rs.getString("endereco_id");
-
-                int usuarioAtual = rs.getInt("usuario_id");
-
-                String nomeJuridico;
+                boolean valido = false;
                 do {
-                    System.out.println("Digite o novo nome juridico (ou Enter para manter: " + nomeJuridicoAtual + "):");
-                    nomeJuridico = sc.nextLine();
-                    if (nomeJuridico.isEmpty()) break; // Permite pular
-                    nomeJuridico = validarApenasLetras(nomeJuridico);
-                    if (nomeJuridico == null) {
-                        System.out.println("ERRO: Nome inválido. Digite apenas letras, acentos e espaços.");
+                    System.out.println("Digite o ID da farmácia que deseja atualizar:");
+                    if (sc.hasNextInt()) {
+                        farmaciaId = sc.nextInt();
+                        sc.nextLine();
+                        valido = true;
+                    } else {
+                        System.out.println("Valor inválido!");
+                        sc.nextLine();
                     }
-                } while (nomeJuridico == null);
-
-                String nomeFantasia;
-                do {
-                    System.out.println("Digite o novo nome fantasia (ou Enter para manter: " + nomeFantasiaAtual + "):");
-                    nomeFantasia = sc.nextLine();
-                    if (nomeFantasia.isEmpty()) break;
-                    nomeFantasia = validarApenasLetras(nomeFantasia);
-                    if (nomeFantasia == null) {
-                        System.out.println("ERRO: Nome inválido. Digite apenas letras, acentos e espaços.");
-                    }
-                } while (nomeFantasia == null);
-
-
-                String cnpj = "";
-                boolean cnpjValido = false;
-                while (!cnpjValido) {
-                    System.out.println("Digite o novo CNPJ (14 dígitos) ou Enter para manter: " + cnpjAtual);
-                    String cnpjDigitado = sc.nextLine();
-                    if (cnpjDigitado.isEmpty()) { cnpj = ""; cnpjValido = true; }
-                    else {
-                        cnpj = validarNumero(cnpjDigitado, 14, 14);
-                        if (cnpj == null) System.out.println("CNPJ inválido.");
-                        else cnpjValido = true;
-                    }
-                }
-
-                System.out.println("Digite o novo alvará (ou Enter para manter: " + alvaraAtual + "):");
-                String alvara = sc.nextLine();
-
-                String responsavel;
-                do {
-                    System.out.println("Digite o novo responsável técnico (ou Enter para manter: " + responsavelAtual + "):");
-                    responsavel = sc.nextLine();
-                    if (responsavel.isEmpty()) break;
-                    responsavel = validarApenasLetras(responsavel);
-                    if (responsavel == null) {
-                        System.out.println("ERRO: Nome inválido. Digite apenas letras, acentos e espaços.");
-                    }
-                } while (responsavel == null);
-
-                System.out.println("Digite o novo CRF (ou Enter para manter: " + crfAtual + "):");
-                String crf = sc.nextLine();
-
-                String telefone = "";
-                boolean telValido = false;
-                while (!telValido) {
-                    System.out.println("Digite o novo telefone (10 ou 11 dígitos) ou Enter para manter: " + telefoneAtual);
-                    String telDigitado = sc.nextLine();
-                    if (telDigitado.isEmpty()) { telefone = ""; telValido = true; }
-                    else {
-                        telefone = validarNumero(telDigitado, 10, 11);
-                        if (telefone == null) System.out.println("Telefone inválido.");
-                        else telValido = true;
-                    }
-                }
-
-                // endereco_id é String (VARCHAR(7))
-                System.out.println("Digite novo endereco_id (ou Enter para manter: " + enderecoAtual + "):");
-                String enderecoId = sc.nextLine();
-
-                StringBuilder sql = new StringBuilder("UPDATE farmacias SET ");
-                List<Object> params = new java.util.ArrayList<>();
-                boolean first = true;
-
-                if (!nomeJuridico.isEmpty()) { if(!first) sql.append(",");sql.append("nome_juridico = ?"); params.add (nomeJuridico); first = false;}
-                if (!nomeFantasia.isEmpty()) { if(!first) sql.append(", "); sql.append("nome_fantasia = ?"); params.add(nomeFantasia); first = false; }
-                if (!cnpj.isEmpty()) { if(!first) sql.append(", "); sql.append("cnpj = ?"); params.add(cnpj); first = false; }
-                if (!alvara.isEmpty()) { if(!first) sql.append(", "); sql.append("alvara_sanitario = ?"); params.add(alvara); first = false; }
-                if (!responsavel.isEmpty()) { if(!first) sql.append(", "); sql.append("responsavel_tecnico = ?"); params.add(responsavel); first = false; }
-                if (!crf.isEmpty()) { if(!first) sql.append(", "); sql.append("crf = ?"); params.add(crf); first = false; }
-                if (!telefone.isEmpty()) { if(!first) sql.append(", "); sql.append("telefone = ?"); params.add(telefone); first = false; }
-                if (!enderecoId.isEmpty()) { if(!first) sql.append(", "); sql.append("endereco_id = ?"); params.add(enderecoId); first = false; }
-
-                if (params.isEmpty()) {
-                    System.out.println("Nenhum campo para atualizar.");
-                    return;
-                }
-
-                sql.append(" WHERE id = ?");
-                params.add(id); // Adiciona o 'id' (INT) para o WHERE
-
-                try (PreparedStatement upd = con.prepareStatement(sql.toString())) {
-                    for (int i = 0; i < params.size(); i++) {
-                        Object p = params.get(i);
-                        if (p instanceof Integer) {
-                            upd.setInt(i + 1, (Integer) p);
-                        } else {
-                            upd.setString(i + 1, p.toString());
-                        }
-                    }
-                    upd.executeUpdate();
-                    System.out.println("Farmácia atualizada com sucesso!");
-                }
-
-            } catch (SQLException e) {
-                System.out.println("Erro ao buscar farmácia: " + e.getMessage());
+                } while (!valido);
             }
+
+            // ============================================================
+            // 2) CARREGAR DADOS DA FARMÁCIA (sem fechar ResultSet antes!)
+            // ============================================================
+            String sqlSel = "SELECT * FROM farmacias WHERE id = ?";
+            String nomeJuridicoAtual = null;
+            String nomeFantasiaAtual = null;
+            String cnpjAtual = null;
+            String alvaraAtual = null;
+            String responsavelAtual = null;
+            String crfAtual = null;
+            String telefoneAtual = null;
+            String enderecoAtual = null;
+            int usuarioAtual = 0;
+
+            try (PreparedStatement stmt = con.prepareStatement(sqlSel)) {
+                stmt.setInt(1, farmaciaId);
+
+                try (ResultSet rs = stmt.executeQuery()) {
+
+                    if (!rs.next()) {
+                        System.out.println("Farmácia não encontrada.");
+                        return;
+                    }
+
+                    // Carrega TUDO em variáveis (AGORA PODE FECHAR o ResultSet)
+                    nomeJuridicoAtual = rs.getString("nome_juridico");
+                    nomeFantasiaAtual = rs.getString("nome_fantasia");
+                    cnpjAtual = rs.getString("cnpj");
+                    alvaraAtual = rs.getString("alvara_sanitario");
+                    responsavelAtual = rs.getString("responsavel_tecnico");
+                    crfAtual = rs.getString("crf");
+                    telefoneAtual = rs.getString("telefone");
+                    enderecoAtual = rs.getString("endereco_id");
+                    usuarioAtual = rs.getInt("usuario_id");
+                }
+            }
+
+            // ============================================================
+            // 3) SOLICITAR NOVOS DADOS AO USUÁRIO
+            // ============================================================
+
+            System.out.println("Novo nome jurídico (Enter para manter: " + nomeJuridicoAtual + "):");
+            String nomeJuridico = sc.nextLine();
+            if (nomeJuridico.isEmpty()) nomeJuridico = nomeJuridicoAtual;
+
+            System.out.println("Novo nome fantasia (Enter para manter: " + nomeFantasiaAtual + "):");
+            String nomeFantasia = sc.nextLine();
+            if (nomeFantasia.isEmpty()) nomeFantasia = nomeFantasiaAtual;
+
+            System.out.println("Novo CNPJ (Enter para manter: " + cnpjAtual + "):");
+            String cnpj = sc.nextLine();
+            if (cnpj.isEmpty()) cnpj = cnpjAtual;
+
+            System.out.println("Novo alvará (Enter para manter: " + alvaraAtual + "):");
+            String alvara = sc.nextLine();
+            if (alvara.isEmpty()) alvara = alvaraAtual;
+
+            System.out.println("Novo responsável técnico (Enter para manter: " + responsavelAtual + "):");
+            String responsavel = sc.nextLine();
+            if (responsavel.isEmpty()) responsavel = responsavelAtual;
+
+            System.out.println("Novo CRF (Enter para manter: " + crfAtual + "):");
+            String crf = sc.nextLine();
+            if (crf.isEmpty()) crf = crfAtual;
+
+            System.out.println("Novo telefone (Enter para manter: " + telefoneAtual + "):");
+            String telefone = sc.nextLine();
+            if (telefone.isEmpty()) telefone = telefoneAtual;
+
+            // ============================================================
+            // 4) UPDATE FINAL
+            // ============================================================
+
+            String sqlUp =
+                    "UPDATE farmacias SET nome_juridico=?, nome_fantasia=?, cnpj=?, alvara_sanitario=?, " +
+                            "responsavel_tecnico=?, crf=?, telefone=? WHERE id=?";
+
+            try (PreparedStatement upd = con.prepareStatement(sqlUp)) {
+
+                upd.setString(1, nomeJuridico);
+                upd.setString(2, nomeFantasia);
+                upd.setString(3, cnpj);
+                upd.setString(4, alvara);
+                upd.setString(5, responsavel);
+                upd.setString(6, crf);
+                upd.setString(7, telefone);
+                upd.setInt(8, farmaciaId);
+
+                upd.executeUpdate();
+            }
+
+            System.out.println("Farmácia atualizada com sucesso!");
+
         } catch (SQLException e) {
-            System.out.println("Erro de conexão: " + e.getMessage());
+            System.out.println("Erro: " + e.getMessage());
         }
     }
 
-    /**
-     * "Soft delete" - Desativa o usuário associado.
-     * Agora é PÚBLICO para ser chamado pelo Main.
-     */
+
+
     public static void desativarFarmacia(Scanner sc) {
         try (Connection con = Conexao.getConnection()) {
             System.out.println("Digite o ID da farmácia a DESATIVAR:");
