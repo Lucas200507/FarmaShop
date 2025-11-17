@@ -359,6 +359,20 @@ LEFT JOIN enderecos e ON c.endereco_id = e.id;
 
 SELECT * FROM vw_enderecos;
 
+-- VIEW 6
+CREATE VIEW vw_favoritos AS
+SELECT 
+    pf.cliente_id, 
+    c.nome AS clienteNome,
+    p.COD, 
+    p.nome AS produtoNome, 
+    p.preco, 
+    f.nome_fantasia AS farmaciaNome 
+FROM prod_favoritos pf
+JOIN produtos p ON pf.produto_cod = p.COD
+JOIN farmacias f ON p.farmacia_id = f.id
+JOIN clientes c ON pf.cliente_id = c.id;
+
 -- 7. SEGURANÇA: CRIAÇÃO DE USUÁRIOS E CONTROLE DE ACESSO
 
 -- Nível 1: Administrador (DBA)
