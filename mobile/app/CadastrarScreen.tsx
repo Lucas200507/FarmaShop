@@ -12,7 +12,6 @@ export default function CadastrarScreen() {
     const insets = useSafeAreaInsets();
     const topInset = insets.top || (Platform.OS === 'android' ? (RNStatusBar.currentHeight ?? 0) : 0);
 
-    const [email, setEmail] = useState("");
     const router = useRouter();
 
     return (
@@ -31,7 +30,7 @@ export default function CadastrarScreen() {
           Não tenho uma conta
         </Text>
 
-        <FarmaButtonGreen title="Cadastrar" onPress={() => {}} />
+        <FarmaButtonGreen title="Cadastrar" onPress={() => {router.navigate("/Cadastros/CadastrarUsuarioScreen")}} />
         
         <TouchableOpacity onPress={() => {router.navigate("/Cadastros/CadastrarEmpresaScreen")}}>
             <Text style={styles.link}>
