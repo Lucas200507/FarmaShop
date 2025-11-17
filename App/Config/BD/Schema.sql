@@ -1,10 +1,11 @@
-DROP DATABASE IF EXISTS FarmaShop;
+-- 1. CRIAÇÃO DO BANCO DE DADOS E FUNÇÃO DE GERAÇÃO DE ID
+
 CREATE DATABASE FarmaShop;
 USE FarmaShop;
--- FAÇA ESTA FUNÇÃO PARA GERAR CÓDIGOS DO PRODUTO COM 7 DÍGITOS
+-- FAÇA ESTA FUNÇÃO PARA GERAR CÓDIGOS DO PRODUTO COM 5 DÍGITOS
 -- FUNÇÃO OBRIGATÓRIA: Regra Própria para Geração de IDs (UUID/GUID)
 DELIMITER //
-CREATE FUNCTION fn_gerar_id() RETURNS CHAR(7)
+CREATE FUNCTION fn_gerar_id() RETURNS CHAR(5)
 DETERMINISTIC
 BEGIN
 RETURN UUID();
@@ -31,6 +32,8 @@ email VARCHAR(60) NOT NULL UNIQUE,
 senha VARCHAR(255) NOT NULL,
 dataAlteracao TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
+
+SELECT u.*, gu.nome AS tipo, gu.id AS grupoId FROM usuarioGrupo ug LEFT JOIN usuarios u ON u.id = ug.usuario_id LEFT JOIN gruposUsuarios gu ON gu.id = ug.grupo_id where u.id = 1;
 
 -- CRIPTOGRAFIA DA SENHA
 DELIMITER //
@@ -163,16 +166,6 @@ ordem INT DEFAULT 0,
 FOREIGN KEY (produto_cod) REFERENCES produtos (COD)
 );
 
--- Tabela Carrinho
-CREATE TABLE  carrinho (
-id INT PRIMARY KEY AUTO_INCREMENT, 
-cliente_id INT NOT NULL,
-produto_cod CHAR(7) NOT NULL,
-data_adicao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-FOREIGN KEY (cliente_id) REFERENCES clientes (id) ON DELETE CASCADE,
-FOREIGN KEY (produto_cod) REFERENCES produtos (COD) ON DELETE CASCADE
-);
-
 -- 3. TRIGGERS PARA GERAÇÃO DE ID 
 
 -- Trigger para Produtos
@@ -279,7 +272,6 @@ END //
 DELIMITER ;
 
 -- VIEW 1: vw_farmacias_ativas 
-DROP VIEW IF EXISTS vw_farmacias_ativas;
 CREATE VIEW vw_farmacias_ativas AS
 SELECT
 f.id, f.nome_fantasia, f.cnpj, f.telefone,
@@ -290,24 +282,7 @@ JOIN enderecos e ON f.endereco_id = e.id
 JOIN usuarios u ON f.usuario_id = u.id
 WHERE u.situacao = 'ativo';
 
--- VIEW 2: Calcular o Total do Carrinho 
-DROP VIEW IF EXISTS vw_total_carrinho;
-CREATE VIEW vw_total_carrinho AS
-SELECT
-c.cliente_id,
-p.nome AS produto_nome,
-COUNT(c.id) AS quantidade,
-p.preco,
-SUM(p.preco) AS valor_total_item
-FROM
-carrinho c
-JOIN
-produtos p ON c.produto_cod = p.COD
-GROUP BY
-c.cliente_id, c.produto_cod, p.nome, p.preco;
-
--- VIEW 3: vw_produtos_em_promocao 
-DROP VIEW IF EXISTS vw_produtos_em_promocao;
+-- VIEW 2: vw_produtos_em_promocao 
 CREATE VIEW vw_produtos_em_promocao AS
 SELECT
 p.COD, p.nome AS produtoNome, p.preco,
@@ -316,9 +291,9 @@ FROM
 produtos p
 JOIN farmacias f ON p.farmacia_id = f.id
 WHERE p.promocao = TRUE;
+SELECT * FROM vw_usuarios;
 
--- VIEW 4: vw_usuarios
-DROP VIEW IF EXISTS vw_usuarios;
+-- VIEW 3: vw_usuarios
 CREATE VIEW vw_usuarios AS 
 SELECT 
 u.id,
@@ -330,30 +305,18 @@ FROM usuarioGrupo ug
 LEFT JOIN usuarios u ON u.id = ug.usuario_id
 LEFT JOIN gruposUsuarios g ON g.id = ug.grupo_id;
 
--- VIEW 5
-DROP VIEW  IF EXISTS vw_enderecos;
-CREATE VIEW vw_enderecos AS 
-SELECT 
-e.*,
-c.id AS cliente_id
-FROM clientes c
-LEFT JOIN enderecos e ON c.endereco_id = e.id;
-
 -- 7. SEGURANÇA: CRIAÇÃO DE USUÁRIOS E CONTROLE DE ACESSO
 
 -- Nível 1: Administrador (DBA)
-DROP USER IF EXISTS 'admin_farma'@'localhost';
 CREATE USER 'admin_farma'@'localhost' IDENTIFIED BY 'SenhaForteAdminFarma2025';
 GRANT ALL PRIVILEGES ON FarmaShop.* TO 'admin_farma'@'localhost' WITH GRANT OPTION;
 
 -- Nível 2: Aplicativo Web
-DROP USER IF EXISTS 'app_web'@'%';
 CREATE USER 'app_web'@'%' IDENTIFIED BY 'SenhaSeguraParaAplicacao789';
 GRANT SELECT, INSERT, UPDATE, DELETE ON FarmaShop.* TO 'app_web'@'%';
 GRANT EXECUTE ON *.* TO 'app_web'@'%';
 
 -- Nível 3: Relatórios (BI)
-DROP USER IF EXISTS 'relatorio_user'@'%';
 CREATE USER 'relatorio_user'@'%' IDENTIFIED BY 'SenhaRelatorioSomenteLeitura101';
 GRANT SELECT ON FarmaShop.* TO 'relatorio_user'@'%';
 
