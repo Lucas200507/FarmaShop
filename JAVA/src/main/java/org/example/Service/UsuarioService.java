@@ -55,6 +55,7 @@ public class UsuarioService {
                     dto.setId(rs.getInt("id"));
                     dto.setEmail(rs.getString("email"));
                     dto.setSituacao(rs.getString("situacao"));
+                    dto.setSenha(rs.getString("senha"));
                     dto.setGrupo("todos".equals(tipo) ? rs.getString("grupo") : rs.getString("tipo"));
                     usuarios.add(dto);
                 }
