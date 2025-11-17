@@ -1,4 +1,4 @@
-package DTO;
+package org.example.DTO;
 
 public class EnderecoDTO {
     private String id;

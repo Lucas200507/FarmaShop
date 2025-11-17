@@ -1,4 +1,4 @@
-package DTO;
+package org.example.DTO;
 
 public class FarmaciaDTO {
     private Integer id;

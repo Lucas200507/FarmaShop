@@ -1,19 +1,25 @@
-package Service;
+package org.example.Service;
 
-import DTO.UsuarioDTO;
-import org.springframework.stereotype.Service;
+import static com.mongodb.client.model.Filters.*;
 
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
-import Database.Conexao;
-import Database.ConexaoMongo;
-import com.mongodb.client.MongoCollection;
-import com.mongodb.client.MongoDatabase;
-import static com.mongodb.client.model.Filters.eq;
 import org.bson.Document;
 import org.bson.types.ObjectId;
+import org.example.DTO.UsuarioDTO;
+import org.springframework.stereotype.Service;
+
+import com.mongodb.client.MongoCollection;
+import com.mongodb.client.MongoDatabase;
+
+import Database.Conexao;
+import Database.ConexaoMongo;
 
 @Service
 public class UsuarioService {
@@ -37,17 +43,23 @@ public class UsuarioService {
              PreparedStatement stmt = con.prepareStatement(sql)) {
 
             if (!"todos".equals(tipo)) {
-                stmt.setString(1, tipo);
+                stmt.setString(1, "tipo");
             }
 
             try (ResultSet rs = stmt.executeQuery()) {
+                boolean found = false;
                 while (rs.next()) {
+                    found = true;
+                    System.out.println("✅ Usuário encontrado: " + rs.getInt("id") + " - " + rs.getString("email"));
                     UsuarioDTO dto = new UsuarioDTO();
                     dto.setId(rs.getInt("id"));
                     dto.setEmail(rs.getString("email"));
                     dto.setSituacao(rs.getString("situacao"));
                     dto.setGrupo("todos".equals(tipo) ? rs.getString("grupo") : rs.getString("tipo"));
                     usuarios.add(dto);
+                }
+                if (!found) {
+                    System.out.println("⚠️ Nenhum usuário encontrado com tipo = 'cliente'");
                 }
             }
         } catch (SQLException e) {

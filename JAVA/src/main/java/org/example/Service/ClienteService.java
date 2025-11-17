@@ -1,12 +1,16 @@
-package Service;
+package org.example.Service;
 
-import DTO.ClienteDTO;
-import org.springframework.stereotype.Service;
-
-import java.sql.*;
-import java.time.LocalDate;
+import java.sql.Connection;
+import java.sql.Date;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
+
+import org.example.DTO.ClienteDTO;
+import org.springframework.stereotype.Service;
 
 import Database.Conexao;
 

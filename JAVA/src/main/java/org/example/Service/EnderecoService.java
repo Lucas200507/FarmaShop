@@ -1,6 +1,6 @@
-package Service;
+package org.example.Service;
 
-import DTO.EnderecoDTO;
+import org.example.DTO.EnderecoDTO;
 import org.springframework.stereotype.Service;
 
 import java.sql.*;

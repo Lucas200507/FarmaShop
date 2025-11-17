@@ -1,13 +1,13 @@
-package Service;
-
-import DTO.LoginRequest;
-import DTO.LoginResponse;
-import org.springframework.stereotype.Service;
+package org.example.Service;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+
+import org.example.DTO.LoginRequest;
+import org.example.DTO.LoginResponse;
+import org.springframework.stereotype.Service;
 
 import Database.Conexao;
 

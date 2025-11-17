@@ -1,8 +1,8 @@
-package Controller;
+package org.example.Controller;
 
-import DTO.LoginRequest;
-import DTO.LoginResponse;
-import Service.LoginService;
+import org.example.DTO.LoginRequest;
+import org.example.DTO.LoginResponse;
+import org.example.Service.LoginService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
