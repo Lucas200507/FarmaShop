@@ -17,13 +17,15 @@ public class Login {
     private String email;
     private int id;
 
-    public String getGrupo(){
+    public String getGrupo() {
         return grupo;
     }
-    public String getUsuario(){
+
+    public String getUsuario() {
         return email;
     }
-    public int getId(){
+
+    public int getId() {
         return id;
     }
 
@@ -35,14 +37,14 @@ public class Login {
         Usuario u = new Usuario();
         Endereco e = new Endereco();
         Farmacia f = new Farmacia();
-        Cliente c =  new Cliente();
+        Cliente c = new Cliente();
 
-        do{
+        do {
             System.out.println("\n\n\n=== LOGIN ===");
             System.out.println("Digite:\n 1.Realizar Login\n 2.Criar uma conta Cliente\n 3.Criar uma conta Farmácia");
             opcao = sc.nextInt();
             sc.nextLine();
-            switch (opcao){
+            switch (opcao) {
                 case 1:
                     logado = realizarLoginMongo(sc);
                     break;
@@ -162,4 +164,4 @@ public class Login {
             throw new RuntimeException(e);
         }
     }
-
+}
