@@ -43,7 +43,7 @@ public class UsuarioService {
              PreparedStatement stmt = con.prepareStatement(sql)) {
 
             if (!"todos".equals(tipo)) {
-                stmt.setString(1, "tipo");
+                stmt.setString(1, tipo);
             }
 
             try (ResultSet rs = stmt.executeQuery()) {
