@@ -13,8 +13,8 @@ public class Conexao {
     // lucas
 
     private static final String url = "jdbc:mysql://localhost:3306/farmashop";
-    private static final String user = "root";
-    private static final String pss = "";
+    private static final String user = "app_web";
+    private static final String pss = "SenhaSeguraParaAplicacao789";
 
 /*
     // catolica
