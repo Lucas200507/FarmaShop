@@ -1,20 +1,24 @@
 -- 1. CRIAÇÃO DO BANCO DE DADOS E FUNÇÃO DE GERAÇÃO DE ID
-
+SELECT * FROM enderecos;
+DROP DATABASE FarmaShopFarmaShop;
 CREATE DATABASE FarmaShop;
 USE FarmaShop;
--- FAÇA ESTA FUNÇÃO PARA GERAR CÓDIGOS DO PRODUTO COM 5 DÍGITOS
+-- FAÇA ESTA FUNÇÃO PARA GERAR CÓDIGOS DO PRODUTO COM 7 DÍGITOS
 -- FUNÇÃO OBRIGATÓRIA: Regra Própria para Geração de IDs (UUID/GUID)
 DELIMITER //
-CREATE FUNCTION fn_gerar_id() RETURNS CHAR(5)
-DETERMINISTIC
+CREATE FUNCTION fn_gerar_id() 
+RETURNS CHAR(7)
+NOT DETERMINISTIC
 BEGIN
-RETURN UUID();
+    RETURN SUBSTRING(REPLACE(UUID(), '-', ''), 1, 7);
 END //
 DELIMITER ;
+
 
 -- =================================================================
 -- 2. TABELAS OBRIGATÓRIAS E ESTRUTURA BASE 
 -- =================================================================
+
 
 -- Tabela Grupos de Usuários 
 CREATE TABLE gruposUsuarios (
@@ -23,6 +27,7 @@ nome VARCHAR(50) UNIQUE NOT NULL,
 descricao VARCHAR(255)
 );
 INSERT INTO gruposUsuarios (id, nome, descricao) VALUES (2, 'cliente', 'acesso a páginas de clientes'),(3, 'farmacia' ,'acesso a todas as páginas, exceto de cartão'),(1,'adm' ,'acesso a todas as páginas');
+SELECT * FROM gruposUsuarios;
 
 -- Tabela Usuários
 CREATE TABLE usuarios(
@@ -32,8 +37,6 @@ email VARCHAR(60) NOT NULL UNIQUE,
 senha VARCHAR(255) NOT NULL,
 dataAlteracao TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
-
-SELECT u.*, gu.nome AS tipo, gu.id AS grupoId FROM usuarioGrupo ug LEFT JOIN usuarios u ON u.id = ug.usuario_id LEFT JOIN gruposUsuarios gu ON gu.id = ug.grupo_id where u.id = 1;
 
 -- CRIPTOGRAFIA DA SENHA
 DELIMITER //
@@ -47,7 +50,7 @@ END
 DELIMITER ;
 
 INSERT INTO usuarios (email,senha) VALUES ('adm@','321'), ('cliente@','123'), ('farmacia@', '123');
-
+SELECT * FROM usuarios;
 -- Tabela de Relacionamento 
 CREATE TABLE usuarioGrupo (
 usuario_id INT NOT NULL, 
@@ -57,6 +60,7 @@ FOREIGN KEY (usuario_id) REFERENCES usuarios (id),
 FOREIGN KEY (grupo_id) REFERENCES gruposUsuarios (id)
 );
 INSERT INTO usuarioGrupo (usuario_id, grupo_id) VALUES (1, 1), (2, 2), (3, 3);
+SELECT * FROM usuarioGrupo;
 
 -- Tabela para log de auditoria de segurança 
 CREATE TABLE logAlteracoesSenha (
@@ -66,6 +70,7 @@ dataAlteracao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 ipOrigem VARCHAR(50), 
 FOREIGN KEY (usuarioId) REFERENCES usuarios (id)
 );
+SELECT * FROM logAlteracoesSenha;
 
 -- Tabela Endereços
 CREATE TABLE enderecos(
@@ -78,6 +83,11 @@ numero INT,
 bairro VARCHAR(60),
 complemento TEXT
 );
+SELECT * FROM enderecos;
+
+INSERT INTO enderecos (cep, estado, cidade, rua, numero, bairro, complemento) VALUES
+('01001-000', 'SP', 'São Paulo', 'Rua da Saúde', 100, 'Centro', 'Próximo à estação de metrô'),
+('20031-050', 'RJ', 'Rio de Janeiro', 'Avenida das Farmácias', 250, 'Copacabana', 'Em frente à praça principal');
 
 -- Tabela Clientes
 CREATE TABLE clientes(
@@ -92,20 +102,7 @@ data_cadastro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 FOREIGN KEY (endereco_id) REFERENCES enderecos (id),
 FOREIGN KEY (usuario_id) REFERENCES usuarios (id)
 );
-
--- Tabela Cartão
-CREATE TABLE cartaos(
-id VARCHAR(7) PRIMARY KEY,
-clienteId INT NOT NULL, 
-nome_titular VARCHAR(100) NOT NULL, 
-bandeira ENUM('Visa','MasterCard','Elo','Amex','Hipercard','Outros') NOT NULL,
-ultimos_digitos CHAR(4) NOT NULL, 
-validade_mes CHAR(2),
-validade_ano CHAR(4) NOT NULL, 
-token_pagamento VARCHAR(255) NOT NULL, 
-dataCadastro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-FOREIGN KEY (clienteId) REFERENCES clientes(id)
-);
+SELECT * FROM clientes;
 
 -- Tabela Farmácias
 CREATE TABLE farmacias(
@@ -123,6 +120,9 @@ dataCadastro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 FOREIGN KEY (endereco_id) REFERENCES enderecos (id),
 FOREIGN KEY (usuario_id) REFERENCES usuarios (id)
 );
+INSERT INTO farmacias (nome_juridico,nome_fantasia,cnpj,alvara_sanitario,responsavel_tecnico,crf,telefone,endereco_id, usuario_id) VALUES ('Farmácia Saúde Total LTDA','Farmácia Saúde Total','12345678000199','ALV-2025-0001','João da Silva','CRF-SP 12345','11999990000','0b870', 3);
+
+SELECT * FROM farmacias;
 
 -- Tabela Categoria Produtos
 CREATE TABLE categoria_produtos(
@@ -131,6 +131,7 @@ nome VARCHAR(100) NOT NULL
 );
 
 INSERT INTO categoria_produtos(id, nome) VALUES (1, 'Cosméticos'), (2, 'Medicamento'), (3, 'Prod. Beleza'), (4, 'Prod. Higiene'), (5, 'Prod. Infantil'), (6, 'Prod. Saúde');
+SELECT * FROM categoria_produtos;
 
 -- Tabela Produtos
 CREATE TABLE produtos(
@@ -148,6 +149,20 @@ FOREIGN KEY (categoria_id) REFERENCES categoria_produtos (id),
 FOREIGN KEY (farmacia_id) REFERENCES farmacias (id)
 );
 
+INSERT INTO produtos (nome, descricao, estoque, promocao, preco, categoria_id, farmacia_id) VALUES
+('Dipirona Sódica 500mg', 'Analgésico e antipirético em comprimidos.', 100, FALSE, 12.90, 2, 3),
+('Paracetamol 750mg', 'Analgésico e antipirético em comprimidos.', 80, TRUE, 15.50, 2, 3),
+('Shampoo Anticaspa 200ml', 'Shampoo para controle de caspa.', 50, FALSE, 22.90, 1, 3),
+('Sabonete Líquido Neutro 250ml', 'Sabonete líquido para uso diário.', 70, FALSE, 14.75, 4, 3),
+('Protetor Solar FPS 50 120ml', 'Protetor solar para todos os tipos de pele.', 40, TRUE, 49.90, 3, 3),
+('Vitamina C 500mg', 'Suplemento vitamínico em comprimidos.', 60, FALSE, 29.90, 6, 3),
+('Fralda Infantil Tamanho M', 'Pacote com 30 unidades.', 35, FALSE, 39.99, 5, 3),
+('Álcool 70% 500ml', 'Álcool etílico 70% para assepsia.', 90, TRUE, 9.99, 6, 3),
+('Escova Dental Macia', 'Escova dental com cerdas macias.', 120, FALSE, 7.50, 4, 3),
+('Creme Hidratante Corporal 200ml', 'Hidratante corporal para pele seca.', 55, FALSE, 24.90, 1, 3);
+
+SELECT * FROM produtos;
+
 -- Tabela de Favoritos
 CREATE TABLE prod_favoritos(
 cliente_id INT NOT NULL,
@@ -156,17 +171,18 @@ FOREIGN KEY (cliente_id) REFERENCES clientes(id),
 FOREIGN KEY (produto_cod) REFERENCES produtos(COD)
 );
 
--- Tabela Imagem Produtos 
-CREATE TABLE imagem_produtos(
-id INT PRIMARY KEY,
-produto_cod VARCHAR(7) NOT NULL, 
-url VARCHAR(255) NOT NULL,
-pricipal BOOLEAN DEFAULT FALSE,
-ordem INT DEFAULT 0,
-FOREIGN KEY (produto_cod) REFERENCES produtos (COD)
-);
+SELECT * FROM prod_favoritos;
 
--- 3. TRIGGERS PARA GERAÇÃO DE ID 
+-- Tabela Carrinho
+CREATE TABLE  carrinho (
+id INT PRIMARY KEY AUTO_INCREMENT, 
+cliente_id INT NOT NULL,
+produto_cod CHAR(7) NOT NULL,
+data_adicao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+FOREIGN KEY (cliente_id) REFERENCES clientes (id) ON DELETE CASCADE,
+FOREIGN KEY (produto_cod) REFERENCES produtos (COD) ON DELETE CASCADE
+);
+SELECT * FROM carrinho;
 
 -- Trigger para Produtos
 DELIMITER //
@@ -272,6 +288,7 @@ END //
 DELIMITER ;
 
 -- VIEW 1: vw_farmacias_ativas 
+DROP VIEW IF EXISTS vw_farmacias_ativas;
 CREATE VIEW vw_farmacias_ativas AS
 SELECT
 f.id, f.nome_fantasia, f.cnpj, f.telefone,
@@ -282,7 +299,29 @@ JOIN enderecos e ON f.endereco_id = e.id
 JOIN usuarios u ON f.usuario_id = u.id
 WHERE u.situacao = 'ativo';
 
--- VIEW 2: vw_produtos_em_promocao 
+SELECT *FROM vw_farmacias_ativas;
+
+-- VIEW 2: Calcular o Total do Carrinho 
+DROP VIEW IF EXISTS vw_total_carrinho;
+CREATE VIEW vw_total_carrinho AS
+SELECT
+c.cliente_id,
+p.nome AS produto_nome,
+COUNT(c.id) AS quantidade,
+p.preco,
+SUM(p.preco) AS valor_total_item
+FROM
+carrinho c
+JOIN
+produtos p ON c.produto_cod = p.COD
+GROUP BY
+c.cliente_id, c.produto_cod, p.nome, p.preco;
+
+SELECT * FROM vw_total_carrinho;
+
+
+-- VIEW 3: vw_produtos_em_promocao 
+DROP VIEW IF EXISTS vw_produtos_em_promocao;
 CREATE VIEW vw_produtos_em_promocao AS
 SELECT
 p.COD, p.nome AS produtoNome, p.preco,
@@ -291,9 +330,11 @@ FROM
 produtos p
 JOIN farmacias f ON p.farmacia_id = f.id
 WHERE p.promocao = TRUE;
-SELECT * FROM vw_usuarios;
 
--- VIEW 3: vw_usuarios
+SELECT * FROM vw_produtos_em_promocao;
+
+-- VIEW 4: vw_usuarios
+DROP VIEW IF EXISTS vw_usuarios;
 CREATE VIEW vw_usuarios AS 
 SELECT 
 u.id,
@@ -305,20 +346,35 @@ FROM usuarioGrupo ug
 LEFT JOIN usuarios u ON u.id = ug.usuario_id
 LEFT JOIN gruposUsuarios g ON g.id = ug.grupo_id;
 
+SELECT * FROM vw_usuarios;
+
+-- VIEW 5
+DROP VIEW  IF EXISTS vw_enderecos;
+CREATE VIEW vw_enderecos AS 
+SELECT 
+e.*,
+c.id AS cliente_id
+FROM clientes c
+LEFT JOIN enderecos e ON c.endereco_id = e.id;
+
+SELECT * FROM vw_enderecos;
+
 -- 7. SEGURANÇA: CRIAÇÃO DE USUÁRIOS E CONTROLE DE ACESSO
 
 -- Nível 1: Administrador (DBA)
+DROP USER IF EXISTS 'admin_farma'@'localhost';
 CREATE USER 'admin_farma'@'localhost' IDENTIFIED BY 'SenhaForteAdminFarma2025';
 GRANT ALL PRIVILEGES ON FarmaShop.* TO 'admin_farma'@'localhost' WITH GRANT OPTION;
 
 -- Nível 2: Aplicativo Web
+DROP USER IF EXISTS 'app_web'@'%';
 CREATE USER 'app_web'@'%' IDENTIFIED BY 'SenhaSeguraParaAplicacao789';
 GRANT SELECT, INSERT, UPDATE, DELETE ON FarmaShop.* TO 'app_web'@'%';
 GRANT EXECUTE ON *.* TO 'app_web'@'%';
 
 -- Nível 3: Relatórios (BI)
+DROP USER IF EXISTS 'relatorio_user'@'%';
 CREATE USER 'relatorio_user'@'%' IDENTIFIED BY 'SenhaRelatorioSomenteLeitura101';
 GRANT SELECT ON FarmaShop.* TO 'relatorio_user'@'%';
 
 FLUSH PRIVILEGES;
-
