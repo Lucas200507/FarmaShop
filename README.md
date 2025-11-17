@@ -1,13 +1,12 @@
 # Como rodar o programa:
-- Baixar os arquivos do main JAVA, favor, ignorar os outros arquivos fora deste diretório<br>
 - Rodar o schema do banco de dados no mysql
 ## Conectar ao Banco: 
 - No intelliJ, vá em File > Project Structure > Modules > Add '+' > Jar or Diretories > Selecione o arquivo  mysql-connector-j-9.5.0, a qual estará em FarmaShop > Java > lib.<br>
 - Em Database Conexao, altere as variáveis, url, user e pss:<br>
   EX: <br>
-  private static final String url = "jdbc:mysql://HOST:PORT/FarmaShop";<br>
-    private static final String user = "USER";<br>
-    private static final String pss = "SENHA";<br><br>
+ private static final String url  = "jdbc:mysql://HOST:PORT/FarmaShop";<br>
+    private static final String user = "app_web";<br>
+    private static final String pss  = "SenhaSeguraParaAplicacao789";
 # Fluxo do programa:
 O programa se inicia com a tela de login, onde temos a opção de sair do programa, cadastrar farmácia, cliente ou realizar login:
 <br>
