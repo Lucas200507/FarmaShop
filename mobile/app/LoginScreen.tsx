@@ -20,7 +20,9 @@ export default function LoginScreen() {
     const router = useRouter();
     let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
-    const handleSubmit = () => {
+    const handleSubmit = async () => {
+      let resultado = await logar();
+      if (!resultado.sucesso) {
         setshowErrorSheet(true);
 
         if (timeoutId) clearTimeout(timeoutId);
@@ -29,8 +31,45 @@ export default function LoginScreen() {
             setshowErrorSheet(false);
             timeoutId = null;
         }, 3000);
+      } else {
+        router.navigate("/Home/HomeScreen");
+      }
     }
     
+async function logar() {
+  const dados = {
+    email: usuario,
+    senha: senha
+  };
+
+  try {
+    const resposta = await fetch("http://localhost:8080/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(dados)
+    });
+
+    // Se o status NÃO for 2xx, já lança erro
+    if (!resposta.ok) {
+      const erro = await resposta.json();
+      console.log("Erro:", erro);
+      return { sucesso: false, mensagem: erro.message || "Falha no login" };
+    }
+
+    // Se der sucesso
+    const resultado = await resposta.json();
+    console.log("Sucesso:", resultado);
+
+    return { sucesso: true, dados: resultado };
+
+  } catch (e) {
+    console.log("Erro inesperado:", e);
+    return { sucesso: false, mensagem: "Erro de conexão com o servidor" };
+  }
+}
+
+
+
     return (
         <View style={[styles.container, { paddingTop: topInset }]}>
             <FarmaHeader title="Login" />

@@ -1,10 +1,21 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Text, Image, StyleSheet, View, ScrollView } from "react-native";
 import FarmaPromoCard from "./components/FarmaPromoCard";
 import FarmaCard from "./components/FarmaCard";
 import FarmaTagButton from "./components/FarmaTagButton";
-
+import { Produto } from "../../models/produto";
 export default function HomeScreen() {
+    const [produtos, setProdutos] = useState<Produto[]>([]);
+
+
+    async function carregarProdutos() {
+    const resposta = await fetch("http://localhost:8080/api/produtos?grupo=cliente&perfilId=2");
+    const dados = await resposta.json();
+    setProdutos(dados);
+  }
+     useEffect(() => {
+    carregarProdutos();
+  }, []);
     const farmaPromoSection = () => {
         return (
             <>
@@ -62,21 +73,14 @@ export default function HomeScreen() {
                 style={styles.promoScroll}
                 contentContainerStyle={{gap: 12}}
             >
-            <FarmaCard
-                label="Título"
-                price="18,00"
-                action={()=>{}}
-            />
-            <FarmaCard
-                label="Título"
-                price="18,00"
-                action={()=>{}}
-            />
-            <FarmaCard
-                label="Título"
-                price="18,00"
-                action={()=>{}}
-            />
+                {produtos.map((p) => {
+                 return <FarmaCard
+                    label={p.nome}
+                    price={p.preco}
+                    action={()=>{}}
+                />})}
+   
+           
         </ScrollView>
         </>
         );
