@@ -1,6 +1,4 @@
 -- 1. CRIAÇÃO DO BANCO DE DADOS E FUNÇÃO DE GERAÇÃO DE ID
-SELECT * FROM enderecos;
-DROP DATABASE FarmaShopFarmaShop;
 CREATE DATABASE FarmaShop;
 USE FarmaShop;
 -- FAÇA ESTA FUNÇÃO PARA GERAR CÓDIGOS DO PRODUTO COM 7 DÍGITOS
@@ -392,3 +390,4 @@ CREATE USER 'relatorio_user'@'%' IDENTIFIED BY 'SenhaRelatorioSomenteLeitura101'
 GRANT SELECT ON FarmaShop.* TO 'relatorio_user'@'%';
 
 FLUSH PRIVILEGES;
+
