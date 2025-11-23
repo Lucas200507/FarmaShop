@@ -38,12 +38,6 @@ public class Main {
         }
     }
 
-    /**
-     * Busca o ID da tabela 'clientes' ou 'farmacias' com base no usuario_id.
-     * @param grupo O grupo do usuário ("cliente" ou "farmacia")
-     * @param usuarioId O ID da tabela 'usuarios'
-     * @return O ID do perfil (cliente_id ou farmacia_id), ou 0 se for ADM ou não encontrado.
-     */
     public static int getPerfilId(String grupo, int usuarioId) {
         String sql;
         int id = 0;

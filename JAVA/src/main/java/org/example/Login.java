@@ -5,10 +5,6 @@ import Controller.Endereco;
 import Controller.Farmacia;
 import Controller.Usuario;
 import Database.Conexao;
-import com.mongodb.client.MongoCollection;
-import com.mongodb.client.MongoDatabase;
-import static com.mongodb.client.model.Filters.*;
-import org.bson.Document;
 
 import java.security.MessageDigest;
 import java.sql.Connection;
@@ -22,13 +18,15 @@ public class Login {
     private String email;
     private int id;
 
-    public String getGrupo(){
+    public String getGrupo() {
         return grupo;
     }
-    public String getUsuario(){
+
+    public String getUsuario() {
         return email;
     }
-    public int getId(){
+
+    public int getId() {
         return id;
     }
 
@@ -40,14 +38,14 @@ public class Login {
         Usuario u = new Usuario();
         Endereco e = new Endereco();
         Farmacia f = new Farmacia();
-        Cliente c =  new Cliente();
+        Cliente c = new Cliente();
 
-        do{
+        do {
             System.out.println("\n\n\n=== LOGIN ===");
             System.out.println("Digite:\n 1.Realizar Login\n 2.Criar uma conta Cliente\n 3.Criar uma conta Farmácia");
             opcao = sc.nextInt();
             sc.nextLine();
-            switch (opcao){
+            switch (opcao) {
                 case 1:
                     logado = realizarLogin(sc);
                     break;
@@ -109,51 +107,7 @@ public class Login {
         return logado;
     }
 
-    public boolean realizarLoginMongo(Scanner sc) {
-        boolean logado = false;
-        MongoDatabase db = Database.ConexaoMongo.getDatabase("FarmaShop");
-        MongoCollection<Document> usuarios = db.getCollection("usuarios");
-        MongoCollection<Document> grupos = db.getCollection("gruposUsuarios");
 
-        do {
-            System.out.print("Usuário: ");
-            String usuario = sc.nextLine().trim();
-            if (usuario.isEmpty()) return false;
-
-            System.out.print("Senha: ");
-            String senha = sc.nextLine().trim();
-            if (senha.isEmpty()) return false;
-
-            // Criptografa senha igual ao MySQL: UPPER(MD5(senha))
-            String senhaCriptografada = md5Upper(senha);
-
-            // Faz a busca no MongoDB
-            Document user = usuarios.find(
-                    and(
-                            eq("email", usuario),
-                            eq("senha", senhaCriptografada),
-                            eq("situacao", "ativo")
-                    )
-            ).first();
-
-            if (user != null) {
-                // Busca o grupo do usuário (join manual)
-                Document grupoDoc = grupos.find(eq("_id", user.getObjectId("grupo_id"))).first();
-
-                this.email = user.getString("email");
-                this.id = user.getObjectId("_id").hashCode(); // só pra ter um id inteiro, se precisar
-                this.grupo = grupoDoc != null ? grupoDoc.getString("nome") : "desconhecido";
-
-                System.out.println("Login realizado com sucesso! Grupo: " + this.grupo);
-                logado = true;
-            } else {
-                System.out.println("Usuário ou senha incorretos, tente novamente.");
-            }
-
-        } while (!logado);
-
-        return logado;
-    }
 
     // Função auxiliar para gerar MD5 maiúsculo
     private static String md5Upper(String input) {
@@ -167,4 +121,5 @@ public class Login {
             throw new RuntimeException(e);
         }
     }
+}
 

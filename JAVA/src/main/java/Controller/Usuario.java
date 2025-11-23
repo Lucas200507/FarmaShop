@@ -9,15 +9,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 
-import org.bson.Document;
-// ------------------------------------
-
-import com.mongodb.client.MongoDatabase;
 
 // Imports do MySQL (SQL)
 import Database.Conexao;
-// --- Imports do MongoDB (NoSQL) ---
-import Database.ConexaoMongo;
+
+
 
 public class Usuario {
 
@@ -335,13 +331,9 @@ public class Usuario {
                             System.out.println("Usuário atualizado com sucesso!");
                         }
 
-                        // ======================================================
-                        // INTEGRAÇÃO: Se a senha mudou, loga no MongoDB
-                        // ======================================================
                         if (senhaMudou) {
-                            System.out.println("Atualizando senha no MySQL... OK.");
-                            System.out.println("Enviando log para o MongoDB...");
-                            logarAlteracaoSenhaMongo(idUsuario, emailAtual);
+                            System.out.println("Atualizando senha no MySQL...");
+
                         }
                         // ======================================================
 
@@ -358,35 +350,7 @@ public class Usuario {
         } while (!atualizado);
     }
 
-    // --- NOVO MÉTODO (MONGODB) ---
-    /**
-     * Insere um documento de log na coleção 'logAlteracoesSenha' no MongoDB.
-     * @param usuarioId O ID do usuário (do banco MySQL)
-     * @param email O email do usuário
-     */
-    private static void logarAlteracaoSenhaMongo(int usuarioId, String email) {
-        try {
-            // 1. Conecta ao MongoDB
-            MongoDatabase db = ConexaoMongo.getDatabase("FarmaShop");
 
-            // 2. Cria um novo "Documento" (equivalente ao JSON)
-            Document logDoc = new Document();
-            logDoc.append("usuarioId_sql", usuarioId); // Guarda a referência do ID do MySQL
-            logDoc.append("email", email);
-            logDoc.append("dataAlteracao", new java.util.Date()); // Data atual
-            logDoc.append("ipOrigem", "App_Java_CLI"); // Fonte do log
-            logDoc.append("motivo", "Atualização via app Java");
-
-            // 3. Insere o documento na coleção "logAlteracoesSenha"
-            db.getCollection("logAlteracoesSenha").insertOne(logDoc);
-
-            System.out.println("Log de segurança salvo no MongoDB com sucesso.");
-
-        } catch (Exception e) {
-            // Se o MongoDB falhar, não quebra o app, apenas avisa.
-            System.out.println("AVISO: Erro ao salvar log no MongoDB: " + e.getMessage());
-        }
-    }
 
     /**
      * Desativa um usuário (Soft Delete)

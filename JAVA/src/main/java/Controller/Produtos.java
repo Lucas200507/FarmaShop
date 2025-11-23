@@ -89,8 +89,9 @@ public class Produtos {
 
         if (grupoNome.equals("cliente")) {
             System.out.println("5. Adicionar produto aos favoritos");
-            System.out.println("6. Ver meus favoritos");
-            System.out.println("7. Adicionar produto ao carrinho"); // <-- Feature do Colega
+            System.out.println("6. Remover produto dos favoritos");
+            System.out.println("7. Ver meus favoritos");
+            System.out.println("8. Adicionar produto ao carrinho"); // <-- Feature do Colega
         }
 
         System.out.println("4. Voltar ao menu principal");
@@ -142,19 +143,20 @@ public class Produtos {
             case 6:
                 if (grupoNome.equals("cliente")) {
                     exibirFavoritos(perfilId);
+                    removerFavorito(sc, perfilId);
                 } else {
                     System.out.println("Acesso negado.");
                 }
                 break;
-            // =================================================================
-            // CASE 7 (CARRINHO) CORRIGIDO
-            // =================================================================
             case 7:
                 if (grupoNome.equals("cliente")) {
-
-                    // CORREÇÃO:
-                    // Não precisamos chamar 'getClienteIdByUsuarioId'.
-                    // O 'perfilId' que o Main.java nos passou JÁ É o cliente_id.
+                    exibirFavoritos(perfilId);
+                } else {
+                    System.out.println("Acesso negado.");
+                }
+                break;
+            case 8:
+                if (grupoNome.equals("cliente")) {
                     int clienteId = perfilId;
 
                     if (clienteId > 0) {
@@ -467,13 +469,31 @@ public class Produtos {
         }
     }
 
+    public static void removerFavorito(Scanner sc, int clienteId) {
+        System.out.println("Digite o Código do produto que deseja ser removido.");
+        String COD = sc.nextLine();
+        try {
+            Connection con = Conexao.getConnection();
+            PreparedStatement stmt1 = con.prepareStatement("DELETE FROM prod_favoritos WHERE produto_cod = ? AND cliente_id = ?");
+            stmt1.setString(1, COD);
+            stmt1.setInt(2, clienteId);
+            int linhas = stmt1.executeUpdate();
+            if (linhas > 0) {
+                System.out.println("Produto removido da lista de favoritos.");
+            } else {
+                System.out.println("Produto não encontrado na sua lista de favoritos");
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     /**
      * Exibe os produtos favoritados por um cliente (USANDO A VIEW).
      */
     public static void exibirFavoritos(int clienteId) {
         System.out.println("=== MEUS FAVORITOS ===");
 
-        // Usando a VIEW 'vw_favoritos' (que está no seu SQL Consolidado)
         String sql = "SELECT * FROM vw_favoritos WHERE cliente_id = ?";
 
         try (Connection con = Conexao.getConnection();
@@ -487,9 +507,9 @@ public class Produtos {
             while (rs.next()) {
                 existe = true;
                 System.out.println("COD: " + rs.getString("COD"));
-                System.out.println("Nome: " + rs.getString("produto"));
+                System.out.println("Nome: " + rs.getString("produtoNome"));
                 System.out.println("Preço: R$ " + rs.getDouble("preco"));
-                System.out.println("Vendido por: " + rs.getString("farmacia"));
+                System.out.println("Vendido por: " + rs.getString("farmaciaNome"));
                 System.out.println("---------------------------------");
             }
 
@@ -504,12 +524,9 @@ public class Produtos {
     }
 
     // =================================================================
-    // MÉTODOS DO CARRINHO (DO ARQUIVO DO COLEGA)
+    // MÉTODOS DO CARRINHO
     // =================================================================
 
-    /**
-     * Adiciona itens ao carrinho.
-     */
     public static void adicionarAoCarrinho(Scanner sc, int clienteId) {
         System.out.println("=== ADICIONAR AO CARRINHO ===");
 
@@ -587,9 +604,6 @@ public class Produtos {
         }
     }
 
-    /**
-     * Helper para mostrar produtos para o carrinho.
-     */
     private static void exibirTodosProdutosSimples() {
         String sql = """
             SELECT p.COD, p.nome, p.preco, p.estoque, f.nome_fantasia AS farmacia
@@ -624,13 +638,9 @@ public class Produtos {
     }
 
     // =================================================================
-    // NOVOS MÉTODOS: Visualizar e Remover do Carrinho
+    // Visualizar e Remover do Carrinho
     // =================================================================
 
-    /**
-     * Exibe o carrinho de compras atual do cliente como um menu interativo.
-     * @param clienteId O ID do cliente logado.
-     */
     public static void exibirCarrinho(Scanner sc, int clienteId) {
         String sql = "SELECT * FROM vw_total_carrinho WHERE cliente_id = ?";
         double totalGeral = 0.0;
@@ -706,11 +716,6 @@ public class Produtos {
         }
     }
 
-    /**
-     * Remove uma quantidade N de um produto do carrinho e devolve ao estoque.
-     * @param sc Scanner
-     * @param clienteId ID do cliente
-     */
     private static void removerDoCarrinho(Scanner sc, int clienteId) {
         System.out.println("--- Remover Item do Carrinho ---");
         System.out.print("Digite o COD do produto que deseja remover: ");
