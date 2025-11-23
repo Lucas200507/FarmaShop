@@ -1,10 +1,25 @@
-<?xml version="1.0" encoding="UTF-8" ?>
-<NotepadPlus>
-    <Session activeView="0">
-        <mainView activeIndex="1">
-            <File firstVisibleLine="0" xOffset="0" scrollWidth="647" startPos="0" endPos="0" selMode="0" offset="0" wrapCount="1" lang="Nenhum (Texto Normal)" encoding="-1" userReadOnly="no" filename="C:\Program Files\Notepad++\change.log" backupFilePath="" originalFileLastModifTimestamp="-1376016640" originalFileLastModifTimestampHigh="31166339" tabColourId="-1" RTL="no" tabPinned="no" mapFirstVisibleDisplayLine="-1" mapFirstVisibleDocLine="-1" mapLastVisibleDocLine="-1" mapNbLine="-1" mapHigherPos="-1" mapWidth="-1" mapHeight="-1" mapKByteInDoc="512" mapWrapIndentMode="-1" mapIsWrap="no" />
-            <File firstVisibleLine="6" xOffset="0" scrollWidth="1423" startPos="980" endPos="980" selMode="0" offset="0" wrapCount="1" lang="Markdown (preinstalled)" encoding="-1" userReadOnly="no" filename="C:\Users\PASCOM\Downloads\FarmaShop-main_SQL\README.md" backupFilePath="" originalFileLastModifTimestamp="1005138695" originalFileLastModifTimestampHigh="31218866" tabColourId="-1" RTL="no" tabPinned="no" mapFirstVisibleDisplayLine="-1" mapFirstVisibleDocLine="-1" mapLastVisibleDocLine="-1" mapNbLine="-1" mapHigherPos="-1" mapWidth="-1" mapHeight="-1" mapKByteInDoc="512" mapWrapIndentMode="-1" mapIsWrap="no" />
-        </mainView>
-        <subView activeIndex="0" />
-    </Session>
-</NotepadPlus>
+# Como rodar o programa:
+- Na sua IDE de mysql, rode o script presente em DATABASE.sql e execute o banco com suas tabelas, triggers, funções e views. <br>
+- Baixar os arquivos do main JAVA, favor, ignorar os outros arquivos fora deste diretório<br>
+
+## Conectar ao Banco: 
+- No intelliJ, vá em File > Project Structure > Modules > Add '+' > Jar or Diretories > Selecione o arquivo  mysql-connector-j-9.5.0, a qual estará em FarmaShop > Java > lib.<br>
+- Em Database Conexao, altere as variáveis, url, user e pss:<br>
+  EX: <br>
+  private static final String url = "jdbc:mysql://HOST:PORT/FarmaShop";<br>
+    private static final String user = "USER";<br>
+    private static final String pss = "SENHA";<br><br>
+# Fluxo do programa:
+O programa se inicia com a tela de login, onde temos a opção de sair do programa, cadastrar farmácia, cliente ou realizar login:
+<br>
+## LOGIN
+Digite:<br>
+ 1.Realizar Login<br>
+ 2.Criar uma conta Cliente<br>
+ 3.Criar uma conta Farmácia<br>
+ 4.Sair<br>
+
+UTLIZE ESSES USUÁRIOS PARA TESTE:<br>  usuário: cliente@gmail | senha: 123<br>  usuário: farmacia@gmail | senha: 123<br>
+Crie outros tipos de usuários no login.
+
+OBS: Não foi criado uma classe para favoritos, contudo em Produtos, possui esta funcionalidade.
